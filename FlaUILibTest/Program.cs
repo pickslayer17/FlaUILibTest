@@ -1,12 +1,9 @@
 ﻿
 using FlaUI.Core;
-using FlaUI.Core.AutomationElements;
-using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
 using FlaUI.UIA3;
 using FlaUILibTest;
 using System.Diagnostics;
-using System.Security.Cryptography;
 
 class Program
 {
@@ -33,6 +30,6 @@ class Program
         var cellA1 = new Element(gridModule,
             cf.ByControlType(ControlType.DataItem).And(cf.ByName("A1")));
 
-        await cellA1.Click();
+        await cellA1.ClickAsync();
     }
 }

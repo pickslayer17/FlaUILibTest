@@ -1,6 +1,5 @@
 ﻿using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
-using System.Reflection;
 
 namespace FlaUILibTest;
 

@@ -1,7 +1,7 @@
 ﻿using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
-using System.Xml.Linq;
+using FlaUILibTest.Interfaces;
 
 namespace FlaUILibTest;
 
@@ -9,48 +9,80 @@ public enum ModuleState
 {
     NotReady,
     Ready,
-    Updated
+    Updated,
+    NotInitialized
 }
 
-public class Module
+public class Module : ISubscriber
 {
-    private readonly AutomationElement _window;
-    private readonly List<Element> _subscribers = new();
+    private readonly AutomationElement _parentElement;
+    private readonly List<ISubscriber> _subscribers = new();
     private readonly object _subscribersLock = new();
     private readonly SemaphoreSlim _rebuildLock = new(1, 1);
 
-    private AutomationElement? _anchor;
-    private ConditionBase _condition;
+    public AutomationElement? Self { get; private set; }
+    public ConditionBase SelfCondition { get; }
     private ModuleState _state = ModuleState.NotReady;
 
     public ModuleState State => _state;
 
-    public Module(AutomationElement window, ConditionBase condition)
+    public Module(AutomationElement parentElement, ConditionBase condition)
     {
-        _window = window;
-        _condition = condition;
+        _parentElement = parentElement;
+        SelfCondition = condition;
         EventManager.Instance.Register(this);
     }
 
-    public void AddSubscriber(Element element)
+    public void TryInitialize()
     {
-        lock (_subscribersLock)
+        try
         {
-            _subscribers.Add(element);
+            var found = _parentElement.FindFirstDescendant(SelfCondition);
+            if (found != null)
+            {
+                Self = found;
+                _state = ModuleState.Ready;
+                Rebuild();
+            }
+        }
+        catch { }
+    }
+
+    public void Update(AutomationElement? element)
+    {
+        if (element != null)
+        {
+            Self = element;
+            _state = ModuleState.Ready;
+            Rebuild();
+        }
+        else
+        {
+            Self = null;
+            _state = ModuleState.NotReady;
+            InvalidateAllSubscribers();
         }
     }
 
-    public void RemoveSubscriber(Element element)
+    public void AddSubscriber(ISubscriber subscriber)
     {
         lock (_subscribersLock)
         {
-            _subscribers.Remove(element);
+            _subscribers.Add(subscriber);
+        }
+    }
+
+    public void RemoveSubscriber(ISubscriber subscriber)
+    {
+        lock (_subscribersLock)
+        {
+            _subscribers.Remove(subscriber);
         }
     }
 
     public bool MatchesEvent(AutomationElement source, StructureChangeType changeType, int[] runtimeId)
     {
-        try { return ConditionMatcher.Matches(source, _condition); }
+        try { return ConditionMatcher.Matches(source, SelfCondition); }
         catch { return false; }
     }
 
@@ -59,13 +91,13 @@ public class Module
         switch (changeType)
         {
             case StructureChangeType.ChildAdded:
-                _anchor = source;
+                Self = source;
                 _state = ModuleState.Ready;
                 Rebuild();
                 break;
 
             case StructureChangeType.ChildRemoved:
-                _anchor = null;
+                Self = null;
                 _state = ModuleState.NotReady;
                 InvalidateAllSubscribers();
                 break;
@@ -82,19 +114,19 @@ public class Module
         _rebuildLock.Wait();
         try
         {
-            if (_anchor == null) return;
+            if (Self == null) return;
 
-            List<Element> snapshot;
+            List<ISubscriber> snapshot;
             lock (_subscribersLock)
             {
-                snapshot = new List<Element>(_subscribers);
+                snapshot = new List<ISubscriber>(_subscribers);
             }
 
             foreach (var element in snapshot)
             {
                 try
                 {
-                    var found = _anchor.FindFirstDescendant(element.Condition);
+                    var found = Self.FindFirstDescendant(element.SelfCondition);
                     element.Update(found);
                 }
                 catch
@@ -113,10 +145,10 @@ public class Module
 
     private void InvalidateAllSubscribers()
     {
-        List<Element> snapshot;
+        List<ISubscriber> snapshot;
         lock (_subscribersLock)
         {
-            snapshot = new List<Element>(_subscribers);
+            snapshot = new List<ISubscriber>(_subscribers);
         }
 
         foreach (var element in snapshot)
