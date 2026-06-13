@@ -6,6 +6,7 @@ namespace FlaUILibTest;
 
 public abstract class AutomationSubscriberBase : ISubscriber
 {
+    private const int Timeout = 5000;
     private AutomationElement? _cached;
     private TaskCompletionSource<AutomationElement>? _pendingRequest;
     private readonly object _lock = new();
@@ -28,7 +29,6 @@ public abstract class AutomationSubscriberBase : ISubscriber
             if (element != null && _pendingRequest != null)
             {
                 _pendingRequest.TrySetResult(element);
-                _pendingRequest = null;
             }
         }
     }
@@ -37,14 +37,17 @@ public abstract class AutomationSubscriberBase : ISubscriber
     {
         lock (_lock)
         {
+            _pendingRequest = null;
+
             if (_module.State == ModuleState.NotInitialized)
                 _module.TryInitialize();
+
             if (_cached != null && _module.State == ModuleState.Ready)
                 return _cached;
 
-            _pendingRequest ??= new TaskCompletionSource<AutomationElement>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _pendingRequest = new TaskCompletionSource<AutomationElement>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
-        return await _pendingRequest.Task;
+        return await _pendingRequest.Task.WaitAsync(TimeSpan.FromMilliseconds(Timeout));
     }
 }
