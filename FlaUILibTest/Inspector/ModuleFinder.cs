@@ -31,23 +31,26 @@ public class ModuleFinder
     private readonly string _name;
     private int _searchCount;
 
-    private readonly object _watсhesLock = new();
+    private readonly object _watchesLock = new();
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> _watches;
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> Watches 
     {
         get 
         {
-            lock (_watсhesLock)
+            lock (_watchesLock)
             {
                 return _watches;
             }
         }
         set
         {
-            lock (_watсhesLock)
+            lock (_watchesLock)
             {
-                foreach (var watch in PendingWatches)
-                    watch.tcs.TrySetCanceled();
+                if (_watches != null)
+                {
+                    foreach (var watch in _watches.Where(w => !w.tcs.Task.IsCompleted))
+                        watch.tcs.TrySetCanceled();
+                }
                 _watches = value;
             }
         }
