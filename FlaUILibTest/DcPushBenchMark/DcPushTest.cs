@@ -164,7 +164,7 @@ public class DcPushTest
 
         stopwatch.Restart();
         var dcPushWindow = await GetElement(cf.ByControlType(ControlType.Window).And(cf.ByAutomationId("DcPushDialog")));
-        var dcPushDialogueModuleFinder = new ModuleFinder();
+        var dcPushDialogueModuleFinder = new ModuleFinder("dcPush");
         dcPushDialogueModuleFinder.Subscribe(dcPushWindow.AsWindow());
 
         var valueInput = await GetElementFromFinder(dcPushDialogueModuleFinder, cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("valueInput")));
