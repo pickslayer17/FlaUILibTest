@@ -6,25 +6,6 @@ using FlaUI.Core.Identifiers;
 
 namespace FlaUILibTest.Inspector;
 
-public enum UiaProperty
-{
-    AutomationId = 30002,
-    Name = 30005,
-    IsEnabled = 30010,
-    IsContentElement = 30012,
-    IsControlElement = 30013,
-    IsOffscreen = 30022,
-    AriaProperties = 30043,
-    ItemStatus = 30045
-}
-
-public static class UiaPropertyHelper 
-{
-    public static readonly PropertyId[] AllProperties = Enum.GetValues<UiaProperty>()
-    .Select(p => PropertyId.Register(AutomationType.UIA3, (int)p, p.ToString()))
-    .ToArray();
-}
-
 public class ModuleFinder
 {
     private AutomationElement _root;
@@ -84,11 +65,12 @@ public class ModuleFinder
         ResetWatches();
         _root = element;
         element.RegisterStructureChangedEvent(TreeScope.Subtree, OnStructureChanged);
-        element.RegisterPropertyChangedEvent(TreeScope.Subtree, OnPropertyChanged, UiaPropertyHelper.AllProperties);
+        element.RegisterPropertyChangedEvent(TreeScope.Subtree, OnPropertyChanged, UiaPropertyHelper.TestProperties);
     }
 
     public async Task<AutomationElement> RegisterAndGetElementAsync(ConditionBase condition, int timeoutMs = 7000)
     {
+        Log($"RegisterAsync: searching from {GetElementInfo(_root)}");
         var found = DefaultSearch(condition);
         if (found != null)
             return found;
@@ -97,10 +79,15 @@ public class ModuleFinder
 
         return await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
     }
-    
+
     private AutomationElement DefaultSearch(ConditionBase condition)
     {
-        return _root.FindFirstDescendant(condition);
+        try { return _root.FindFirstDescendant(condition); }
+        catch (Exception ex)
+        {
+            Log($"[!!!ERROR!!!] DefaultSearch failed: {ex.Message}");
+            return null;
+        }
     }
 
     private void OnStructureChanged(AutomationElement element, StructureChangeType changeType, int[] runtimeId)
@@ -169,9 +156,13 @@ public class ModuleFinder
     {
         var name = "";
         var cls = "";
+        var ct = "";
+        var aid = "";
+        try { ct = element.Properties.ControlType.ValueOrDefault.ToString(); } catch { }
+        try { aid = element.Properties.AutomationId.ValueOrDefault; } catch { }
         try { name = element.Properties.Name.ValueOrDefault; } catch { }
         try { cls = element.Properties.ClassName.ValueOrDefault; } catch { }
-        return $"{name} | {cls}";
+        return $"Nm: '{name}' | Cls: '{cls}' | CnrtrlTp: '{ct}' | AutId: '{aid}'";
     }
 
     private void Log(string message)

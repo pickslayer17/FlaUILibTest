@@ -138,11 +138,11 @@ public class DcPushTest
         var dcPushButton = await GetElement(cf.ByControlType(ControlType.Button).And(cf.ByName("DCPush")));
         dcPushButton.Patterns.Invoke.Pattern.Invoke();
         stopwatch.Stop();
-        Console.WriteLine($">>> DCPush button: {stopwatch.ElapsedMilliseconds}ms");
+        Console.WriteLine($">>> DCPush button invoked: {stopwatch.ElapsedMilliseconds}ms");
 
         stopwatch.Restart();
         var dcPushWindow = await GetElement(cf.ByControlType(ControlType.Window).And(cf.ByAutomationId("DcPushDialog")));
-        _finder.Subscribe(dcPushWindow.AsWindow());
+        //_finder.Subscribe(dcPushWindow.AsWindow());
 
         var valueInput = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("valueInput")));
         valueInput.AsTextBox().Text = cellA1Name;
