@@ -14,34 +14,34 @@ class Program
 {
     static async Task Main()
     {
-        //var test = new DcPushTest();
-       
+        var test = new DcPushTest();
+
         //test.RunPreconditions();
-        //test.RunTest();
+        await test.RunTestAsync();
 
-        //test.CleanUp();
+        test.CleanUp();
 
-        Console.OutputEncoding = System.Text.Encoding.UTF8;
+        //Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-        var psi = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
-        {
-            WindowStyle = ProcessWindowStyle.Normal
-        };
-        var application = Application.Launch(psi);
-        var automation = new UIA3Automation();
-        var window = application.GetMainWindow(automation);
-        var cf = automation.ConditionFactory;
+        //var psi = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
+        //{
+        //    WindowStyle = ProcessWindowStyle.Normal
+        //};
+        //var application = Application.Launch(psi);
+        //var automation = new UIA3Automation();
+        //var window = application.GetMainWindow(automation);
+        //var cf = automation.ConditionFactory;
 
         //var tree = new UITree(window);
         //tree.WatchElement(conditionFactory.ByControlType(ControlType.DataItem).And(conditionFactory.ByName("A1")));
         //tree.SubscribeToEvents(window);
         //await tree.BuildAsync();
 
-        var finder = new ModuleFinder();
-        finder.Subscribe(window);
-        var cellA1Task = finder.Register(cf.ByControlType(ControlType.DataItem).And(cf.ByName("A1")));
-        var cellA1 = await cellA1Task;
-        cellA1.Click();
+        //var finder = new ModuleFinder();
+        //finder.Subscribe(window);
+        //var cellA1Task = finder.Register(cf.ByControlType(ControlType.DataItem).And(cf.ByName("A1")));
+        //var cellA1 = await cellA1Task;
+        //cellA1.Click();
 
 
 

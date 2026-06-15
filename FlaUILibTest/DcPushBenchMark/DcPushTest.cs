@@ -5,10 +5,13 @@ using FlaUI.Core.Definitions;
 using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
 using FlaUI.UIA3;
+using FlaUILibTest.Inspector;
+using Microsoft.Playwright;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -25,45 +28,48 @@ public class DcPushTest
     private HttpClient _http;
     private string _aft;
 
-    private string clientUrl = "";
-    private string appIdUrl = "";
-    private string email = "";
-    private string password = "";
-    private int clientId = 0;
+    private string clientUrl;
+    private string appIdUrl;
+    private string email;
+    private string password;
+    private int clientId;
     private int _listId;
 
-    private AutomationElement GetElement(AutomationElement root, ConditionBase condition)
+    private ModuleFinder _finder;
+    private Window window;
+
+    private async Task<AutomationElement> GetElement(ConditionBase condition)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (DateTime.UtcNow < deadline)
-        {
-            try
-            {
-                var found = root.FindFirstDescendant(condition);
-                if (found != null) return found;
-            }
-            catch { }
-            Thread.Sleep(500);
-        }
-        throw new TimeoutException("Element not found.");
+        return await _finder.Register(condition);
     }
 
-    private void WaitForSingleTreeItem(AutomationElement parent, ConditionFactory cf)
+    public DcPushTest()
     {
-        var deadline = DateTime.UtcNow.AddSeconds(10);
-        while (DateTime.UtcNow < deadline)
-        {
-            try
-            {
-                if (parent.FindAllDescendants(cf.ByControlType(ControlType.TreeItem)).Length == 1)
-                    return;
-            }
-            catch { }
-            Thread.Sleep(200);
-        }
+        var config = JObject.Parse(File.ReadAllText("appsettings.json"));
+        clientUrl = config["clientUrl"].ToString();
+        appIdUrl = config["appIdUrl"].ToString();
+        email = config["email"].ToString();
+        password = config["password"].ToString();
+        clientId = config["clientId"].Value<int>();
     }
 
-    public void RunTest()
+    //private AutomationElement GetElement(AutomationElement root, ConditionBase condition)
+    //{
+    //    var deadline = DateTime.UtcNow.AddSeconds(10);
+    //    while (DateTime.UtcNow < deadline)
+    //    {
+    //        try
+    //        {
+    //            var found = root.FindFirstDescendant(condition);
+    //            if (found != null) return found;
+    //        }
+    //        catch { }
+    //        Thread.Sleep(500);
+    //    }
+    //    throw new TimeoutException("Element not found.");
+    //}
+
+    public async Task RunTestAsync()
     {
         var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
         {
@@ -72,7 +78,10 @@ public class DcPushTest
         var application = Application.Launch(processStartInfo);
         var automation = new UIA3Automation();
         var window = application.GetMainWindow(automation);
+        _finder = new ModuleFinder();
+        _finder.Subscribe(window);
         var cf = automation.ConditionFactory;
+        var playwright = await Playwright.CreateAsync();
 
         var stopwatch = new Stopwatch();
         var notSentStatus = "(Not Sent)";
@@ -82,37 +91,47 @@ public class DcPushTest
         var cellB1Name = "B1";
         var firstCellValue = $"PushVal_{Guid.NewGuid().ToString("N")[..5]}";
 
-        var titleBar = GetElement(window, cf.ByControlType(ControlType.TitleBar).And(cf.ByName("Excel")));
+        var titleBar = await GetElement(cf.ByControlType(ControlType.TitleBar).And(cf.ByName("Excel")));
         titleBar.Click();
 
-        var fileTab = GetElement(window, cf.ByControlType(ControlType.Button).And(cf.ByName("File Tab")));
+        var fileTab = await GetElement(cf.ByControlType(ControlType.Button).And(cf.ByName("File Tab")));
         fileTab.Click();
 
-        var blankWorkbook = GetElement(window, cf.ByControlType(ControlType.ListItem).And(cf.ByName("Blank workbook")));
+        var blankWorkbook = await GetElement(cf.ByControlType(ControlType.ListItem).And(cf.ByName("Blank workbook")));
         blankWorkbook.Click();
 
-        var dealCloudTab = GetElement(window, cf.ByControlType(ControlType.TabItem).And(cf.ByName("DealCloud")));
+        var dealCloudTab = await GetElement(cf.ByControlType(ControlType.TabItem).And(cf.ByName("DealCloud")));
         dealCloudTab.Click();
 
-        var loginButton = GetElement(window, cf.ByName("DealCloud Login").And(cf.ByControlType(ControlType.Button)));
+        var loginButton = await GetElement(cf.ByName("DealCloud Login").And(cf.ByControlType(ControlType.Button)));
         loginButton.Patterns.Invoke.Pattern.Invoke();
+        
+        //PLAYWRIGHT PART
+        // -----------
+        // ------------
+        var browser = await playwright.Chromium.ConnectOverCDPAsync("http://localhost:9222");
+        var contexts = browser.Contexts;
+        var page = contexts[0].Pages[0];
 
-        var emailInput = GetElement(window, cf.ByControlType(ControlType.Edit).And(cf.ByName("Email")));
-        emailInput.AsTextBox().Text = email;
+        await page.Locator("#Email").FillAsync(email);
+        await page.Locator("[data-qa-id='next_button']").ClickAsync();
+        await page.Locator("#Password").FillAsync(password);
+        await page.Locator("[data-qa-id='ok_button']").ClickAsync();
+        //--------------
 
-        var nextButton = GetElement(window, cf.ByControlType(ControlType.Button).And(cf.ByName("Next")));
-        nextButton.Patterns.Invoke.Pattern.Invoke();
+        //var emailInput = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByName("Email")));
+        //emailInput.AsTextBox().Text = email;
+        //var nextButton = await GetElement(cf.ByControlType(ControlType.Button).And(cf.ByName("Next")));
+        //nextButton.Patterns.Invoke.Pattern.Invoke();
+        //var passwordInput = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("Password")));
+        //passwordInput.AsTextBox().Text = password;
+        //var logInButton = await GetElement(cf.ByControlType(ControlType.Button).And(cf.ByName("Log in")));
+        //logInButton.Patterns.Invoke.Pattern.Invoke();
 
-        var passwordInput = GetElement(window, cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("Password")));
-        passwordInput.AsTextBox().Text = password;
-
-        var logInButton = GetElement(window, cf.ByControlType(ControlType.Button).And(cf.ByName("Log in")));
-        logInButton.Patterns.Invoke.Pattern.Invoke();
-
-        GetElement(window, cf.ByControlType(ControlType.Button).And(cf.ByName("DealCloud Logout")));
+        await GetElement(cf.ByControlType(ControlType.Button).And(cf.ByName("DealCloud Logout")));
 
         stopwatch.Start();
-        var cellA1 = GetElement(window, cf.ByControlType(ControlType.DataItem).And(cf.ByName(cellA1Name)));
+        var cellA1 = await GetElement(cf.ByControlType(ControlType.DataItem).And(cf.ByName(cellA1Name)));
         stopwatch.Stop();
         Console.WriteLine($">>> Grid ready: {stopwatch.ElapsedMilliseconds}ms");
 
@@ -120,49 +139,45 @@ public class DcPushTest
         Keyboard.Type(firstCellValue);
         Keyboard.Type(VirtualKeyShort.ENTER);
 
-        var cellB1 = GetElement(window, cf.ByControlType(ControlType.DataItem).And(cf.ByName(cellB1Name)));
+        var cellB1 = await GetElement(cf.ByControlType(ControlType.DataItem).And(cf.ByName(cellB1Name)));
         cellB1.Click();
 
-        dealCloudTab = GetElement(window, cf.ByControlType(ControlType.TabItem).And(cf.ByName("DealCloud")));
+        dealCloudTab = await GetElement(cf.ByControlType(ControlType.TabItem).And(cf.ByName("DealCloud")));
         dealCloudTab.Click();
 
         stopwatch.Restart();
-        var dcPushButton = GetElement(window, cf.ByControlType(ControlType.Button).And(cf.ByName("DCPush")));
+        var dcPushButton = await GetElement(cf.ByControlType(ControlType.Button).And(cf.ByName("DCPush")));
         dcPushButton.Patterns.Invoke.Pattern.Invoke();
         stopwatch.Stop();
         Console.WriteLine($">>> DCPush button: {stopwatch.ElapsedMilliseconds}ms");
 
         stopwatch.Restart();
-        var valueInput = GetElement(window, cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("valueInput")));
+        var valueInput = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("valueInput")));
         valueInput.AsTextBox().Text = cellA1Name;
 
-        var objectCombo = GetElement(window, cf.ByControlType(ControlType.ComboBox).And(cf.ByAutomationId("cbxLists")));
-        objectCombo.FindFirstChild(cf.ByControlType(ControlType.Button).And(cf.ByName("Open"))).Click();
-        var objectDropdown = GetElement(window, cf.ByControlType(ControlType.Menu).And(cf.ByName("DropDown")));
-        objectDropdown.FindFirstDescendant(cf.ByControlType(ControlType.Edit)).AsTextBox().Text = ObjectName;
-        GetElement(objectDropdown, cf.ByControlType(ControlType.TreeItem).And(cf.ByName(ObjectName))).Click();
+        await SelectFromDropdown(cf, "cbxLists", ObjectName);
+        await SelectFromDropdown(cf, "cbxEntries", EntryName);
+        await SelectFromDropdown(cf, "cbxFields", TextFieldName);
 
-        var entryCombo = GetElement(window, cf.ByControlType(ControlType.ComboBox).And(cf.ByAutomationId("cbxEntries")));
-        entryCombo.FindFirstChild(cf.ByControlType(ControlType.Button).And(cf.ByName("Open"))).Click();
-        var entryDropdown = GetElement(window, cf.ByControlType(ControlType.Menu).And(cf.ByName("DropDown")));
-        entryDropdown.FindFirstDescendant(cf.ByControlType(ControlType.Edit)).AsTextBox().Text = EntryName;
-        GetElement(entryDropdown, cf.ByControlType(ControlType.TreeItem).And(cf.ByName(EntryName))).Click();
-
-        var fieldCombo = GetElement(window, cf.ByControlType(ControlType.ComboBox).And(cf.ByAutomationId("cbxFields")));
-        fieldCombo.FindFirstChild(cf.ByControlType(ControlType.Button).And(cf.ByName("Open"))).Click();
-        var fieldDropdown = GetElement(window, cf.ByControlType(ControlType.Menu).And(cf.ByName("DropDown")));
-        fieldDropdown.FindFirstDescendant(cf.ByControlType(ControlType.Edit)).AsTextBox().Text = TextFieldName;
-        GetElement(fieldDropdown, cf.ByControlType(ControlType.TreeItem).And(cf.ByName(TextFieldName))).Click();
+        async Task SelectFromDropdown(ConditionFactory cf, string comboAutomationId, string value)
+        {
+            var combo = await GetElement(cf.ByControlType(ControlType.ComboBox).And(cf.ByAutomationId(comboAutomationId)));
+            combo.FindFirstChild(cf.ByControlType(ControlType.Button).And(cf.ByName("Open"))).Click();
+            var dropdown = await GetElement(cf.ByControlType(ControlType.Menu).And(cf.ByName("DropDown")));
+            dropdown.FindFirstDescendant(cf.ByControlType(ControlType.Edit)).AsTextBox().Text = value;
+            var item = await GetElement(cf.ByControlType(ControlType.TreeItem).And(cf.ByName(value)));
+            item.Click();
+        }
 
         stopwatch.Stop();
         Console.WriteLine($">>> Dialog filled: {stopwatch.ElapsedMilliseconds}ms");
 
-        var runButton = GetElement(window, cf.ByControlType(ControlType.Button).And(cf.ByName("RUN")));
+        var runButton = await GetElement(cf.ByControlType(ControlType.Button).And(cf.ByName("RUN")));
         runButton.Click();
 
         stopwatch.Restart();
-        var formulaBar = GetElement(window, cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("FormulaBar")));
-        cellB1 = GetElement(window, cf.ByControlType(ControlType.DataItem).And(cf.ByName(cellB1Name)));
+        var formulaBar = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("FormulaBar")));
+        cellB1 = await GetElement(cf.ByControlType(ControlType.DataItem).And(cf.ByName(cellB1Name)));
         cellB1.Click();
         var formulaText = formulaBar.AsTextBox().Text;
         var expectedFormula = string.Format(dcPushFormula, cellA1Name, ObjectName, EntryName, TextFieldName);
@@ -188,9 +203,9 @@ public class DcPushTest
         Console.WriteLine($"    Actual:   {cellValue}");
 
         stopwatch.Restart();
-        var sendMenu = GetElement(window, cf.ByControlType(ControlType.MenuItem).And(cf.ByName("Send")));
+        var sendMenu = await GetElement(cf.ByControlType(ControlType.MenuItem).And(cf.ByName("Send")));
         sendMenu.Click();
-        var selectionItem = GetElement(window, cf.ByControlType(ControlType.MenuItem).And(cf.ByName("Selection")));
+        var selectionItem = await GetElement(cf.ByControlType(ControlType.MenuItem).And(cf.ByName("Selection")));
         selectionItem.Patterns.Invoke.Pattern.Invoke();
         stopwatch.Stop();
         Console.WriteLine($">>> Send Selection: {stopwatch.ElapsedMilliseconds}ms");
@@ -199,7 +214,7 @@ public class DcPushTest
         var expectedSent = $"{firstCellValue} {sentStatus}";
         deadline = DateTime.UtcNow.AddSeconds(30);
         cellValue = "";
-        cellB1 = GetElement(window, cf.ByControlType(ControlType.DataItem).And(cf.ByName(cellB1Name)));
+        cellB1 = await GetElement(cf.ByControlType(ControlType.DataItem).And(cf.ByName(cellB1Name)));
         while (DateTime.UtcNow < deadline)
         {
             cellValue = cellB1.AsTextBox().Text;

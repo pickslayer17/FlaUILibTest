@@ -11,9 +11,15 @@ public class ModuleFinder
     private readonly object _lock = new();
     private int _searchCount = 0;
     private Stopwatch _sw;
+    private Window _window;
 
     public Task<AutomationElement> Register(ConditionBase elementCondition)
     {
+        /// remove
+        var found = _window.FindFirstDescendant(elementCondition);
+        if (found != null)
+            return Task.FromResult(found);
+
         var tcs = new TaskCompletionSource<AutomationElement>(TaskCreationOptions.RunContinuationsAsynchronously);
         lock (_lock)
         {
@@ -24,6 +30,7 @@ public class ModuleFinder
 
     public void Subscribe(Window window)
     {
+        _window = window;
         window.RegisterStructureChangedEvent(TreeScope.Subtree, OnStructureChanged);
     }
     
