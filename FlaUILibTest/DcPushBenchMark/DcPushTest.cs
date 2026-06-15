@@ -40,7 +40,12 @@ public class DcPushTest
 
     private async Task<AutomationElement> GetElement(ConditionBase condition)
     {
-        return await _finder.Register(condition);
+        return await _finder.RegisterAsync(condition);
+    }
+
+    private async Task<AutomationElement> GetElementFromFinder(ModuleFinder finder, ConditionBase condition)
+    {
+        return await finder.RegisterAsync(condition);
     }
 
     public DcPushTest()
@@ -75,6 +80,8 @@ public class DcPushTest
         {
             WindowStyle = ProcessWindowStyle.Normal
         };
+        processStartInfo.EnvironmentVariables["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = "--remote-debugging-port=9234";
+        processStartInfo.UseShellExecute = false;
         var application = Application.Launch(processStartInfo);
         var automation = new UIA3Automation();
         var window = application.GetMainWindow(automation);
@@ -105,12 +112,25 @@ public class DcPushTest
 
         var loginButton = await GetElement(cf.ByName("DealCloud Login").And(cf.ByControlType(ControlType.Button)));
         loginButton.Patterns.Invoke.Pattern.Invoke();
-        
+
         //PLAYWRIGHT PART
         // -----------
         // ------------
-        var browser = await playwright.Chromium.ConnectOverCDPAsync("http://localhost:9222");
+        while (true)
+        {
+            try
+            {
+                using var tcp = new System.Net.Sockets.TcpClient();
+                tcp.Connect("localhost", 9234);
+                break;
+            }
+            catch { await Task.Delay(50); }
+        }
+        var browser = await playwright.Chromium.ConnectOverCDPAsync("http://localhost:9234");
         var contexts = browser.Contexts;
+        foreach (var ctx in browser.Contexts)
+            foreach (var p in ctx.Pages)
+                Console.WriteLine($"{p.Url}");
         var page = contexts[0].Pages[0];
 
         await page.Locator("#Email").FillAsync(email);
@@ -118,15 +138,6 @@ public class DcPushTest
         await page.Locator("#Password").FillAsync(password);
         await page.Locator("[data-qa-id='ok_button']").ClickAsync();
         //--------------
-
-        //var emailInput = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByName("Email")));
-        //emailInput.AsTextBox().Text = email;
-        //var nextButton = await GetElement(cf.ByControlType(ControlType.Button).And(cf.ByName("Next")));
-        //nextButton.Patterns.Invoke.Pattern.Invoke();
-        //var passwordInput = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("Password")));
-        //passwordInput.AsTextBox().Text = password;
-        //var logInButton = await GetElement(cf.ByControlType(ControlType.Button).And(cf.ByName("Log in")));
-        //logInButton.Patterns.Invoke.Pattern.Invoke();
 
         await GetElement(cf.ByControlType(ControlType.Button).And(cf.ByName("DealCloud Logout")));
 
@@ -152,7 +163,11 @@ public class DcPushTest
         Console.WriteLine($">>> DCPush button: {stopwatch.ElapsedMilliseconds}ms");
 
         stopwatch.Restart();
-        var valueInput = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("valueInput")));
+        var dcPushWindow = await GetElement(cf.ByControlType(ControlType.Window).And(cf.ByAutomationId("DcPushDialog")));
+        var dcPushDialogueModuleFinder = new ModuleFinder();
+        dcPushDialogueModuleFinder.Subscribe(dcPushWindow.AsWindow());
+
+        var valueInput = await GetElementFromFinder(dcPushDialogueModuleFinder, cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("valueInput")));
         valueInput.AsTextBox().Text = cellA1Name;
 
         await SelectFromDropdown(cf, "cbxLists", ObjectName);
