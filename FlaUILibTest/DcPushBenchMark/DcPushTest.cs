@@ -155,6 +155,7 @@ public class DcPushTest
         {
             var combo = await GetElement(cf.ByControlType(ControlType.ComboBox).And(cf.ByAutomationId(comboAutomationId)));
             combo.FindFirstChild(cf.ByControlType(ControlType.Button).And(cf.ByName("Open"))).Click();
+
             var dropdown = await GetElement(cf.ByControlType(ControlType.Menu).And(cf.ByName("DropDown")));
             dropdown.FindFirstDescendant(cf.ByControlType(ControlType.Edit)).AsTextBox().Text = value;
             var item = await GetElement(cf.ByControlType(ControlType.TreeItem).And(cf.ByName(value)));
