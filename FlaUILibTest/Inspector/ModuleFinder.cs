@@ -18,44 +18,49 @@ public enum UiaProperty
     ItemStatus = 30045
 }
 
+public static class UiaPropertyHelper 
+{
+    public static readonly PropertyId[] AllProperties = Enum.GetValues<UiaProperty>()
+    .Select(p => PropertyId.Register(AutomationType.UIA3, (int)p, p.ToString()))
+    .ToArray();
+}
+
 public class ModuleFinder
 {
-    private readonly object _lock = new();
-    private readonly string _name;
     private AutomationElement _root;
+    private readonly string _name;
     private int _searchCount;
 
-    private static readonly PropertyId[] AllProperties = Enum.GetValues<UiaProperty>()
-        .Select(p => PropertyId.Register(AutomationType.UIA3, (int)p, p.ToString()))
-        .ToArray();
-
-    private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> _watches = new();
+    private readonly object _watсhesLock = new();
+    private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> _watches;
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> Watches 
     {
         get 
         {
-            lock (_lock)
+            lock (_watсhesLock)
             {
                 return _watches;
             }
         }
+        set
+        {
+            lock (_watсhesLock)
+            {
+                foreach (var watch in PendingWatches)
+                    watch.tcs.TrySetCanceled();
+                _watches = value;
+            }
+        }
     } 
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> PendingWatches => Watches.Where(w => !w.tcs.Task.IsCompleted).ToList();
+    private void ResetWatches()
+    {
+        Watches = new();
+    }
 
     public ModuleFinder(string name = "default")
     {
         _name = name;
-    }
-
-    public async Task<AutomationElement> RegisterAsync(ConditionBase condition, int timeoutMs = 7000)
-    {
-        var found = _root.FindFirstDescendant(condition);
-        if (found != null)
-            return found;
-        var tcs = new TaskCompletionSource<AutomationElement>(TaskCreationOptions.RunContinuationsAsynchronously);
-        Watches.Add((condition, tcs));
-
-        return await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
     }
 
     public void Subscribe(Window window)
@@ -68,14 +73,31 @@ public class ModuleFinder
         window.RegisterAutomationEvent(
             window.Automation.EventLibrary.Window.WindowClosedEvent,
             TreeScope.Subtree,
-            OnWindowOpened);
+            OnWindowClosed);
     }
 
     public void Subscribe(AutomationElement element)
     {
+        ResetWatches();
         _root = element;
         element.RegisterStructureChangedEvent(TreeScope.Subtree, OnStructureChanged);
-        element.RegisterPropertyChangedEvent(TreeScope.Subtree, OnPropertyChanged, AllProperties);
+        element.RegisterPropertyChangedEvent(TreeScope.Subtree, OnPropertyChanged, UiaPropertyHelper.AllProperties);
+    }
+
+    public async Task<AutomationElement> RegisterAndGetElementAsync(ConditionBase condition, int timeoutMs = 7000)
+    {
+        var found = DefaultSearch(condition);
+        if (found != null)
+            return found;
+        var tcs = new TaskCompletionSource<AutomationElement>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Watches.Add((condition, tcs));
+
+        return await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
+    }
+    
+    private AutomationElement DefaultSearch(ConditionBase condition)
+    {
+        return _root.FindFirstDescendant(condition);
     }
 
     private void OnStructureChanged(AutomationElement element, StructureChangeType changeType, int[] runtimeId)

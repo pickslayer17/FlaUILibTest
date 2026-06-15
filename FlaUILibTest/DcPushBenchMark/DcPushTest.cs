@@ -11,7 +11,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Net;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -40,12 +39,7 @@ public class DcPushTest
 
     private async Task<AutomationElement> GetElement(ConditionBase condition)
     {
-        return await _finder.RegisterAsync(condition);
-    }
-
-    private async Task<AutomationElement> GetElementFromFinder(ModuleFinder finder, ConditionBase condition)
-    {
-        return await finder.RegisterAsync(condition);
+        return await _finder.RegisterAndGetElementAsync(condition);
     }
 
     public DcPushTest()
@@ -57,22 +51,6 @@ public class DcPushTest
         password = config["password"].ToString();
         clientId = config["clientId"].Value<int>();
     }
-
-    //private AutomationElement GetElement(AutomationElement root, ConditionBase condition)
-    //{
-    //    var deadline = DateTime.UtcNow.AddSeconds(10);
-    //    while (DateTime.UtcNow < deadline)
-    //    {
-    //        try
-    //        {
-    //            var found = root.FindFirstDescendant(condition);
-    //            if (found != null) return found;
-    //        }
-    //        catch { }
-    //        Thread.Sleep(500);
-    //    }
-    //    throw new TimeoutException("Element not found.");
-    //}
 
     public async Task RunTestAsync()
     {
@@ -164,10 +142,9 @@ public class DcPushTest
 
         stopwatch.Restart();
         var dcPushWindow = await GetElement(cf.ByControlType(ControlType.Window).And(cf.ByAutomationId("DcPushDialog")));
-        var dcPushDialogueModuleFinder = new ModuleFinder("dcPush");
-        dcPushDialogueModuleFinder.Subscribe(dcPushWindow.AsWindow());
+        _finder.Subscribe(dcPushWindow.AsWindow());
 
-        var valueInput = await GetElementFromFinder(dcPushDialogueModuleFinder, cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("valueInput")));
+        var valueInput = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("valueInput")));
         valueInput.AsTextBox().Text = cellA1Name;
 
         await SelectFromDropdown(cf, "cbxLists", ObjectName);
@@ -191,6 +168,7 @@ public class DcPushTest
         runButton.Click();
 
         stopwatch.Restart();
+        _finder.Subscribe(window);
         var formulaBar = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("FormulaBar")));
         cellB1 = await GetElement(cf.ByControlType(ControlType.DataItem).And(cf.ByName(cellB1Name)));
         cellB1.Click();
