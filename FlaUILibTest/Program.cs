@@ -2,10 +2,13 @@
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
+using FlaUI.Core.Identifiers;
 using FlaUI.UIA3;
+using FlaUILibTest;
 using FlaUILibTest.DcPushBenchMark;
 using FlaUILibTest.Inspector;
 using System.Diagnostics;
+using System.Security.Cryptography;
 
 class Program
 {
@@ -27,31 +30,61 @@ class Program
         var application = Application.Launch(psi);
         var automation = new UIA3Automation();
         var window = application.GetMainWindow(automation);
-        var conditionFactory = automation.ConditionFactory;
+        var cf = automation.ConditionFactory;
 
-        var tree = new UITree(window);
-        tree.WatchElement(conditionFactory.ByControlType(ControlType.DataItem).And(conditionFactory.ByName("A1")));
-        tree.SubscribeToEvents(window);
-        await tree.BuildAsync();
-        Console.ReadLine();
+        //var tree = new UITree(window);
+        //tree.WatchElement(conditionFactory.ByControlType(ControlType.DataItem).And(conditionFactory.ByName("A1")));
+        //tree.SubscribeToEvents(window);
+        //await tree.BuildAsync();
 
-        //EventManagerExtended.Instance.SubscribeAll(window);
+        var finder = new ModuleFinder();
+        finder.Subscribe(window);
+        var cellA1Task = finder.Register(cf.ByControlType(ControlType.DataItem).And(cf.ByName("A1")));
+        var cellA1 = await cellA1Task;
+        cellA1.Click();
+
+
+
+
+        //Console.WriteLine( "wait for blank to grid action");
+        //Console.ReadLine();
+        //window.RegisterPropertyChangedEvent(TreeScope.Subtree, (el, propId, val) =>
+        //{
+        //    Console.WriteLine($"--- WINDOW DIRECT: {propId.Name} = {val}");
+        //},
+        //    PropertyId.Register(AutomationType.UIA3, 30003, "Name"),
+        //    PropertyId.Register(AutomationType.UIA3, 30010, "IsEnabled"),
+        //    PropertyId.Register(AutomationType.UIA3, 30005, "BoundingRectangle")
+        //);
+
+        //window.RegisterStructureChangedEvent(TreeScope.Subtree, (el, changeType, rid) =>
+        //{
+        //    var name = "";
+        //    var cls = "";
+        //    try { name = el.Properties.Name.ValueOrDefault; } catch { }
+        //    try { cls = el.Properties.ClassName.ValueOrDefault; } catch { }
+        //    Console.WriteLine($"--- WINDOW STRUCTURE: {changeType} | {name} | {cls}");
+        //});
+
+        //Console.WriteLine("window subscribed. Click cells...");
+        //Console.ReadLine();
+
+        // EventManagerExtended.Instance.SubscribeAll(window);
 
         //// 1. Подписка
         //EventManager.Instance.Subscribe(window);
 
         //// 2. Модуль — якорь XLDESK
-        //var gridModule = new Module(window, cf.ByClassName("XLDESK"));
+        //var gridModule = new Module(window, conditionFactory.ByClassName("XLDESK"));
 
         //// 4. Элемент — ячейка A1
         //var cellA1 = new Element(gridModule,
-        //    cf.ByControlType(ControlType.DataItem).And(cf.ByName("A1")));
+        //   conditionFactory.ByControlType(ControlType.DataItem).And(conditionFactory.ByName("A1")));
 
         //await cellA1.ClickAsync();
 
 
-
-
+        Console.ReadLine();
     }
 
     static AutomationElement GetElement(AutomationElement root, ConditionBase condition, int timeoutMs = 10000)
