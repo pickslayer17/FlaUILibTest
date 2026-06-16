@@ -54,6 +54,8 @@ public class DcPushTest
 
     public async Task RunTestAsync()
     {
+        var stopwatchTotal = new Stopwatch();
+        stopwatchTotal.Start();
         var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
         {
             WindowStyle = ProcessWindowStyle.Normal
@@ -146,6 +148,7 @@ public class DcPushTest
 
         var valueInput = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("valueInput")));
         valueInput.AsTextBox().Text = cellA1Name;
+        Console.WriteLine($"valueInput set with {cellA1Name}");
 
         await SelectFromDropdown(cf, "cbxLists", ObjectName);
         await SelectFromDropdown(cf, "cbxEntries", EntryName);
@@ -154,12 +157,18 @@ public class DcPushTest
         async Task SelectFromDropdown(ConditionFactory cf, string comboAutomationId, string value)
         {
             var combo = await GetElement(cf.ByControlType(ControlType.ComboBox).And(cf.ByAutomationId(comboAutomationId)));
+            Console.WriteLine($"Combobox found aid = {comboAutomationId}");
             combo.FindFirstChild(cf.ByControlType(ControlType.Button).And(cf.ByName("Open"))).Click();
+            Console.WriteLine($"Open Button found and clicked");
 
             var dropdown = await GetElement(cf.ByControlType(ControlType.Menu).And(cf.ByName("DropDown")));
+            Console.WriteLine($"Menu [DropDown] found");
             dropdown.FindFirstDescendant(cf.ByControlType(ControlType.Edit)).AsTextBox().Text = value;
+            Console.WriteLine($"Edit elemnet found and filed with value {value}");
             var item = await GetElement(cf.ByControlType(ControlType.TreeItem).And(cf.ByName(value)));
+            Console.WriteLine($"TreeItem {value} found");
             item.Click();
+            Console.WriteLine($"TreeItem {value} clicked");
         }
 
         stopwatch.Stop();
@@ -215,11 +224,12 @@ public class DcPushTest
             if (cellValue.Contains(sentStatus)) break;
         }
         stopwatch.Stop();
+        stopwatchTotal.Stop();
         Console.WriteLine($">>> Sent status: {stopwatch.ElapsedMilliseconds}ms");
         Console.WriteLine($"    Expected: {expectedSent}");
         Console.WriteLine($"    Actual:   {cellValue}");
         Console.WriteLine($"    Match: {cellValue == expectedSent}");
-
+        Console.WriteLine($"=== Total test time: {stopwatchTotal.ElapsedMilliseconds}ms ===");
         Console.WriteLine("\n=== BENCHMARK COMPLETE ===");
         Console.ReadLine();
         automation.Dispose();

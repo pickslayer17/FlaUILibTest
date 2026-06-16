@@ -16,9 +16,8 @@ class Program
     {
         var test = new DcPushTest();
 
-        //test.RunPreconditions();
+        test.RunPreconditions();
         await test.RunTestAsync();
-
         test.CleanUp();
 
         //Console.OutputEncoding = System.Text.Encoding.UTF8;
