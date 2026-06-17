@@ -65,8 +65,7 @@ public class DcPushTest
         var application = Application.Launch(processStartInfo);
         var automation = new UIA3Automation();
         var window = application.GetMainWindow(automation);
-        _finder = new ModuleFinder();
-        _finder.Subscribe(window);
+        _finder = new ModuleFinder(window);
         var cf = automation.ConditionFactory;
         var playwright = await Playwright.CreateAsync();
 
@@ -144,7 +143,10 @@ public class DcPushTest
 
         stopwatch.Restart();
         var dcPushWindow = await GetElement(cf.ByControlType(ControlType.Window).And(cf.ByAutomationId("DcPushDialog")));
-        //_finder.Subscribe(dcPushWindow.AsWindow());
+
+        // switch to push dialog
+        var mainWindowFinder = _finder;
+        _finder = new ModuleFinder(dcPushWindow.AsWindow(), "dcPush");
 
         var valueInput = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("valueInput")));
         valueInput.AsTextBox().Text = cellA1Name;
@@ -178,7 +180,8 @@ public class DcPushTest
         runButton.Click();
 
         stopwatch.Restart();
-        _finder.Subscribe(window);
+        // switch back
+        _finder = mainWindowFinder;
         var formulaBar = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("FormulaBar")));
         cellB1 = await GetElement(cf.ByControlType(ControlType.DataItem).And(cf.ByName(cellB1Name)));
         cellB1.Click();

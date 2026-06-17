@@ -13,7 +13,7 @@ public class ModuleFinder
     private int _searchCount;
 
     private readonly object _watchesLock = new();
-    private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> _watches;
+    private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> _watches = new();
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> Watches 
     {
         get 
@@ -37,17 +37,16 @@ public class ModuleFinder
         }
     } 
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> PendingWatches => Watches.Where(w => !w.tcs.Task.IsCompleted).ToList();
-    private void ResetWatches()
-    {
-        Watches = new();
-    }
 
-    public ModuleFinder(string name = "default")
+    private ModuleFinder() { }
+
+    public ModuleFinder(Window element, string name = "default")
     {
         _name = name;
+        Subscribe(element);
     }
 
-    public void Subscribe(Window window)
+    private void Subscribe(Window window)
     {
         Subscribe((AutomationElement)window);
         window.RegisterAutomationEvent(
@@ -60,9 +59,8 @@ public class ModuleFinder
             OnWindowClosed);
     }
 
-    public void Subscribe(AutomationElement element)
+    private void Subscribe(AutomationElement element)
     {
-        ResetWatches();
         _root = element;
         element.RegisterStructureChangedEvent(TreeScope.Subtree, OnStructureChanged);
         element.RegisterPropertyChangedEvent(TreeScope.Subtree, OnPropertyChanged, UiaPropertyHelper.TestProperties);

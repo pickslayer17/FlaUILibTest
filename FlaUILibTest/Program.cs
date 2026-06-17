@@ -14,11 +14,28 @@ class Program
 {
     static async Task Main()
     {
-        var test = new DcPushTest();
+        //var driver = new UIDriver();
+        //var window = driver.LaunchApplication(processStartInfo);
 
-        test.RunPreconditions();
-        await test.RunTestAsync();
-        test.CleanUp();
+        //await driver.Locator(By.Tab("Insert")).ClickAsync();
+        //await driver.Locator(By.Button("Table")).ClickAsync();
+
+        //driver.SwitchTo(By.Window("Create Table"));
+        //await driver.Locator(By.Button("OK")).ClickAsync();
+
+        //driver.SwitchToMainContent();
+
+
+
+
+
+
+
+        //var test = new DcPushTest();
+
+        //test.RunPreconditions();
+        //await test.RunTestAsync();
+        //test.CleanUp();
 
         //Console.OutputEncoding = System.Text.Encoding.UTF8;
 
