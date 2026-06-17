@@ -38,6 +38,16 @@ public class ModuleFinder
     } 
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> PendingWatches => Watches.Where(w => !w.tcs.Task.IsCompleted).ToList();
 
+    private readonly object _searchLock = new();
+
+    private AutomationElement DefaultSearch(AutomationElement root, ConditionBase condition)
+    {
+        lock (_searchLock)
+        {
+            return root.FindFirstDescendant(condition); 
+        }
+    }
+
     private ModuleFinder() { }
 
     public ModuleFinder(Window element, string name = "default")
@@ -63,13 +73,18 @@ public class ModuleFinder
     {
         _root = element;
         element.RegisterStructureChangedEvent(TreeScope.Subtree, OnStructureChanged);
-        element.RegisterPropertyChangedEvent(TreeScope.Subtree, OnPropertyChanged, UiaPropertyHelper.TestProperties);
+        element.RegisterPropertyChangedEvent(TreeScope.Subtree, OnPropertyChanged, UiaPropertyHelper.AllProperties
+            .Except(
+                [
+                    UiaPropertyHelper.GetPropertyId(UiaProperty.BoundingRectangle)
+                ]
+                ).ToArray()); //TestProperties);
     }
 
     public async Task<AutomationElement> RegisterAndGetElementAsync(ConditionBase condition, int timeoutMs = 7000)
     {
         Log($"RegisterAsync: searching from {GetElementInfo(_root)}");
-        var found = DefaultSearch(condition);
+        var found = DefaultSearch(_root, condition);
         if (found != null)
             return found;
         var tcs = new TaskCompletionSource<AutomationElement>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -78,19 +93,11 @@ public class ModuleFinder
         return await tcs.Task.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
     }
 
-    private AutomationElement DefaultSearch(ConditionBase condition)
-    {
-        try { return _root.FindFirstDescendant(condition); }
-        catch (Exception ex)
-        {
-            Log($"[!!!ERROR!!!] DefaultSearch failed: {ex.Message}");
-            return null;
-        }
-    }
-
     private void OnStructureChanged(AutomationElement element, StructureChangeType changeType, int[] runtimeId)
     {
-        if (changeType != StructureChangeType.ChildAdded) return;
+        if (!(changeType == StructureChangeType.ChildAdded ||
+            changeType == StructureChangeType.ChildrenInvalidated)) return;
+
         var info = GetElementInfo(element);
         Log($"STRUCTURE ChildAdded | {info}");
         TryResolveByDescendant(element, info);
@@ -99,7 +106,7 @@ public class ModuleFinder
     private void OnPropertyChanged(AutomationElement element, PropertyId propertyId, object newValue)
     {
         var info = GetElementInfo(element);
-        Log($"PROPERTY {propertyId.Name} = {newValue} | {info}");
+        //Log($"PROPERTY {propertyId.Name} = {newValue} | {info}");
         TryResolveByMatch(element, info);
     }
 
@@ -113,7 +120,10 @@ public class ModuleFinder
 
     private void OnWindowClosed(AutomationElement element, EventId eventId)
     {
-        //stop work with this window
+        var info = GetElementInfo(element);
+        Log($"WINDOW_CLOSED | {info}");
+        //TryResolveByMatch(element, info);
+        //TryResolveByDescendant(element, info);
     }
 
     private void TryResolveByDescendant(AutomationElement element, string elementInfo)
@@ -123,7 +133,7 @@ public class ModuleFinder
             var searchNum = Interlocked.Increment(ref _searchCount);
             try
             {
-                var found = element.FindFirstDescendant(watch.condition);
+                var found = DefaultSearch(element, watch.condition);
                 if (found != null)
                 {
                     Log($">>> RESOLVED [descendant] #{searchNum} from {elementInfo}");

@@ -64,7 +64,7 @@ public enum UiaProperty
 public static class UiaPropertyHelper
 {
     public static readonly PropertyId[] AllProperties = Enum.GetValues<UiaProperty>()
-    .Select(p => PropertyId.Register(AutomationType.UIA3, (int)p, p.ToString()))
+    .Select(p => GetPropertyId(p))
     .ToArray();
 
     public static readonly PropertyId[] TestProperties = new[]
@@ -79,4 +79,6 @@ public static class UiaPropertyHelper
         UiaProperty.ItemStatus
     }.Select(p => PropertyId.Register(AutomationType.UIA3, (int)p, p.ToString()))
     .ToArray();
+
+    public static PropertyId GetPropertyId(UiaProperty property) => PropertyId.Register(AutomationType.UIA3, (int)property, property.ToString());
 }

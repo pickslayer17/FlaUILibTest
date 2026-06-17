@@ -1,7 +1,7 @@
 ﻿using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
 
-namespace FlaUILibTest;
+namespace FlaUILibTest.Inspector;
 
 public class Element : AutomationSubscriberBase
 {

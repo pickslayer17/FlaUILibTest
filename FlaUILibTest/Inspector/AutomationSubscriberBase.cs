@@ -1,10 +1,9 @@
 ﻿using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
-using FlaUILibTest.Interfaces;
 
-namespace FlaUILibTest;
+namespace FlaUILibTest.Inspector;
 
-public abstract class AutomationSubscriberBase : ISubscriber
+public abstract class AutomationSubscriberBase
 {
     private const int Timeout = 5000;
     private AutomationElement? _cached;
@@ -38,9 +37,6 @@ public abstract class AutomationSubscriberBase : ISubscriber
         lock (_lock)
         {
             _pendingRequest = null;
-
-            if (_module.State == ModuleState.NotInitialized)
-                _module.TryInitialize();
 
             if (_cached != null && _module.State == ModuleState.Ready)
                 return _cached;

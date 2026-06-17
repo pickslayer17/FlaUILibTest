@@ -1,9 +1,8 @@
 ﻿using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
-using FlaUILibTest.Interfaces;
 
-namespace FlaUILibTest;
+namespace FlaUILibTest.Inspector;
 
 public enum ModuleState
 {
@@ -13,12 +12,11 @@ public enum ModuleState
     NotInitialized
 }
 
-public class Module : ISubscriber
+public class Module
 {
     private readonly AutomationElement _parentElement;
-    private readonly List<ISubscriber> _subscribers = new();
+    private readonly List<AutomationSubscriberBase> _subscribers = new();
     private readonly object _subscribersLock = new();
-    private readonly SemaphoreSlim _rebuildLock = new(1, 1);
 
     public AutomationElement? Self { get; private set; }
     public ConditionBase SelfCondition { get; }
@@ -30,22 +28,6 @@ public class Module : ISubscriber
     {
         _parentElement = parentElement;
         SelfCondition = condition;
-        EventManager.Instance.Register(this);
-    }
-
-    public void TryInitialize()
-    {
-        try
-        {
-            var found = _parentElement.FindFirstDescendant(SelfCondition);
-            if (found != null)
-            {
-                Self = found;
-                _state = ModuleState.Ready;
-                Rebuild();
-            }
-        }
-        catch { }
     }
 
     public void Update(AutomationElement? element)
@@ -64,7 +46,7 @@ public class Module : ISubscriber
         }
     }
 
-    public void AddSubscriber(ISubscriber subscriber)
+    public void AddSubscriber(AutomationSubscriberBase subscriber)
     {
         lock (_subscribersLock)
         {
@@ -72,7 +54,7 @@ public class Module : ISubscriber
         }
     }
 
-    public void RemoveSubscriber(ISubscriber subscriber)
+    public void RemoveSubscriber(AutomationSubscriberBase subscriber)
     {
         lock (_subscribersLock)
         {
@@ -111,15 +93,14 @@ public class Module : ISubscriber
 
     private void Rebuild()
     {
-        _rebuildLock.Wait();
         try
         {
             if (Self == null) return;
 
-            List<ISubscriber> snapshot;
+            List<AutomationSubscriberBase> snapshot;
             lock (_subscribersLock)
             {
-                snapshot = new List<ISubscriber>(_subscribers);
+                snapshot = new List<AutomationSubscriberBase>(_subscribers);
             }
 
             foreach (var element in snapshot)
@@ -139,16 +120,15 @@ public class Module : ISubscriber
         }
         finally
         {
-            _rebuildLock.Release();
         }
     }
 
     private void InvalidateAllSubscribers()
     {
-        List<ISubscriber> snapshot;
+        List<AutomationSubscriberBase> snapshot;
         lock (_subscribersLock)
         {
-            snapshot = new List<ISubscriber>(_subscribers);
+            snapshot = new List<AutomationSubscriberBase>(_subscribers);
         }
 
         foreach (var element in snapshot)

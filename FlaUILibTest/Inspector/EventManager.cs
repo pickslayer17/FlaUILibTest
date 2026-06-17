@@ -1,7 +1,7 @@
 ﻿using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
 
-namespace FlaUILibTest;
+namespace FlaUILibTest.Inspector;
 
 public class EventManager
 {
