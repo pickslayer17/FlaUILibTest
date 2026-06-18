@@ -215,7 +215,7 @@ public class DcPushTest
         selectionItem.Patterns.Invoke.Pattern.Invoke();
         stopwatch.Stop();
         Console.WriteLine($">>> Send Selection: {stopwatch.ElapsedMilliseconds}ms");
-
+        
         stopwatch.Restart();
         var expectedSent = $"{firstCellValue} {sentStatus}";
         deadline = DateTime.UtcNow.AddSeconds(30);

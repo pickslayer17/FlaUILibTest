@@ -5,9 +5,7 @@ namespace FlaUILibTest.Inspector;
 
 public abstract class AutomationSubscriberBase
 {
-    private const int Timeout = 5000;
     private AutomationElement? _cached;
-    private TaskCompletionSource<AutomationElement>? _pendingRequest;
     private readonly object _lock = new();
 
     public ConditionBase SelfCondition { get; init; }
