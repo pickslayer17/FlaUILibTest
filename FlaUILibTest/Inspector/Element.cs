@@ -5,7 +5,7 @@ namespace FlaUILibTest.Inspector;
 
 public class Element : AutomationSubscriberBase
 {
-    public Element(Module module, ConditionBase condition) : base(module, condition)
+    public Element(ModuleFinder moduleFinder, ConditionBase condition) : base(moduleFinder, condition)
     {
     }
 

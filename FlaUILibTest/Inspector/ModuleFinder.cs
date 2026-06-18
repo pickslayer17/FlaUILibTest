@@ -1,22 +1,25 @@
-﻿using FlaUI.Core;
-using FlaUI.Core.AutomationElements;
+﻿using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.Identifiers;
+using System.Reflection;
 
 namespace FlaUILibTest.Inspector;
 
 public class ModuleFinder
 {
+    private Module _module;
+
+
     private AutomationElement _root;
     private readonly string _name;
     private int _searchCount;
 
     private readonly object _watchesLock = new();
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> _watches = new();
-    private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> Watches 
+    private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> Watches
     {
-        get 
+        get
         {
             lock (_watchesLock)
             {
@@ -35,16 +38,16 @@ public class ModuleFinder
                 _watches = value;
             }
         }
-    } 
+    }
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> PendingWatches => Watches.Where(w => !w.tcs.Task.IsCompleted).ToList();
 
     private readonly object _searchLock = new();
 
-    private AutomationElement DefaultSearch(AutomationElement root, ConditionBase condition)
+    public AutomationElement DefaultSearch(AutomationElement root, ConditionBase condition)
     {
         lock (_searchLock)
         {
-            return root.FindFirstDescendant(condition); 
+            return root.FindFirstDescendant(condition);
         }
     }
 
@@ -81,7 +84,7 @@ public class ModuleFinder
                 ).ToArray()); //TestProperties);
     }
 
-    public async Task<AutomationElement> RegisterAndGetElementAsync(ConditionBase condition, int timeoutMs = 7000)
+    public async Task<AutomationElement> RegisterAndGetElementAsync(ConditionBase condition, int timeoutMs = 15000)
     {
         Log($"RegisterAsync: searching from {GetElementInfo(_root)}");
         var found = DefaultSearch(_root, condition);
@@ -99,8 +102,20 @@ public class ModuleFinder
             changeType == StructureChangeType.ChildrenInvalidated)) return;
 
         var info = GetElementInfo(element);
-        Log($"STRUCTURE ChildAdded | {info}");
+        //Log($"STRUCTURE ChildAdded | {info}");
         TryResolveByDescendant(element, info);
+
+        if (_module?.Self != null)
+        {
+            try
+            {
+                var moduleRid = _module.Self.Properties.RuntimeId.ValueOrDefault;
+                var eventRid = element.Properties.RuntimeId.ValueOrDefault;
+                if (moduleRid != null && eventRid != null && moduleRid.SequenceEqual(eventRid))
+                    _module.Notify(changeType);
+            }
+            catch { }
+        }
     }
 
     private void OnPropertyChanged(AutomationElement element, PropertyId propertyId, object newValue)
@@ -138,6 +153,12 @@ public class ModuleFinder
                 {
                     Log($">>> RESOLVED [descendant] #{searchNum} from {elementInfo}");
                     watch.tcs.TrySetResult(found);
+
+                    _module = new Module(this, element);
+                    _module.AddSubscriber(new Element(this, watch.condition));
+
+                    Log(">>> module created");
+                    
                 }
             }
             catch { }

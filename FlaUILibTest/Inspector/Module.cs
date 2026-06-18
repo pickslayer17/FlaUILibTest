@@ -14,123 +14,93 @@ public enum ModuleState
 
 public class Module
 {
-    private readonly AutomationElement _parentElement;
+    private readonly ModuleFinder _moduleFinder;
     private readonly List<AutomationSubscriberBase> _subscribers = new();
+    private List<AutomationSubscriberBase> Subscribers
+    {
+        get
+        {
+            lock (_subscribersLock)
+            {
+                return _subscribers;
+            }
+        }
+    }
+
     private readonly object _subscribersLock = new();
 
     public AutomationElement? Self { get; private set; }
-    public ConditionBase SelfCondition { get; }
     private ModuleState _state = ModuleState.NotReady;
 
     public ModuleState State => _state;
 
-    public Module(AutomationElement parentElement, ConditionBase condition)
+    public Module(ModuleFinder moduleFinder, AutomationElement self)
     {
-        _parentElement = parentElement;
-        SelfCondition = condition;
-    }
-
-    public void Update(AutomationElement? element)
-    {
-        if (element != null)
-        {
-            Self = element;
-            _state = ModuleState.Ready;
-            Rebuild();
-        }
-        else
-        {
-            Self = null;
-            _state = ModuleState.NotReady;
-            InvalidateAllSubscribers();
-        }
+        Self = self;
+        _moduleFinder = moduleFinder;
     }
 
     public void AddSubscriber(AutomationSubscriberBase subscriber)
     {
-        lock (_subscribersLock)
-        {
-            _subscribers.Add(subscriber);
-        }
+        Subscribers.Add(subscriber);
+        subscriber.SetModule(this);
     }
 
     public void RemoveSubscriber(AutomationSubscriberBase subscriber)
     {
-        lock (_subscribersLock)
-        {
-            _subscribers.Remove(subscriber);
-        }
+        Subscribers.Remove(subscriber);
     }
 
-    public bool MatchesEvent(AutomationElement source, StructureChangeType changeType, int[] runtimeId)
-    {
-        try { return ConditionMatcher.Matches(source, SelfCondition); }
-        catch { return false; }
-    }
-
-    public void Notify(AutomationElement source, StructureChangeType changeType)
+    public void Notify(StructureChangeType changeType)
     {
         switch (changeType)
         {
             case StructureChangeType.ChildAdded:
-                Self = source;
-                _state = ModuleState.Ready;
+                _state = ModuleState.Updated;
                 Rebuild();
+                _state = ModuleState.Ready;
                 break;
 
             case StructureChangeType.ChildRemoved:
                 Self = null;
-                _state = ModuleState.NotReady;
+                _state = ModuleState.Updated;
                 InvalidateAllSubscribers();
+                _state = ModuleState.NotReady;
                 break;
 
             case StructureChangeType.ChildrenInvalidated:
                 _state = ModuleState.Updated;
                 Rebuild();
+                _state = ModuleState.Ready;
                 break;
         }
     }
 
     private void Rebuild()
     {
-        try
+        Console.WriteLine("REBUILD by module");
+        var snapshot = new List<AutomationSubscriberBase>(Subscribers);
+        foreach (var element in snapshot)
         {
-            if (Self == null) return;
-
-            List<AutomationSubscriberBase> snapshot;
-            lock (_subscribersLock)
+            try
             {
-                snapshot = new List<AutomationSubscriberBase>(_subscribers);
-            }
-
-            foreach (var element in snapshot)
-            {
-                try
-                {
-                    var found = Self.FindFirstDescendant(element.SelfCondition);
+                var found = _moduleFinder.DefaultSearch(Self, element.SelfCondition);
+                if (found != null)
                     element.Update(found);
-                }
-                catch
-                {
+                else
                     element.Update(null);
-                }
             }
-
-            _state = ModuleState.Ready;
-        }
-        finally
-        {
+            catch
+            {
+                element.Update(null);
+            }
         }
     }
 
     private void InvalidateAllSubscribers()
     {
-        List<AutomationSubscriberBase> snapshot;
-        lock (_subscribersLock)
-        {
-            snapshot = new List<AutomationSubscriberBase>(_subscribers);
-        }
-
+        Console.WriteLine("INVALIDATE CHILD in module ");
+        var snapshot = new List<AutomationSubscriberBase>(Subscribers);
         foreach (var element in snapshot)
         {
             element.Update(null);

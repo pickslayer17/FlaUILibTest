@@ -9,6 +9,7 @@ using FlaUILibTest.DcPushBenchMark;
 using FlaUILibTest.Inspector;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 class Program
 {
@@ -24,6 +25,33 @@ class Program
         //await driver.Locator(By.Button("OK")).ClickAsync();
 
         //driver.SwitchToMainContent();
+        var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
+        {
+            WindowStyle = ProcessWindowStyle.Normal
+        };
+        processStartInfo.EnvironmentVariables["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = "--remote-debugging-port=9234";
+        processStartInfo.UseShellExecute = false;
+        var application = Application.Launch(processStartInfo);
+        var automation = new UIA3Automation();
+        var window = application.GetMainWindow(automation);
+        var cf = automation.ConditionFactory;
+        var finder = new ModuleFinder(window);
+
+        var cellA1 = await finder.RegisterAndGetElementAsync(
+            cf.ByControlType(ControlType.DataItem).And(cf.ByName("A1"))
+        );
+
+        for (int i = 0; i < 5; i++)
+        {
+            cellA1.Click();
+            Console.WriteLine($"Click {i}");
+            for (int j = 10; j > 0; j--)
+            {
+                Console.WriteLine($"waiting {j}");
+                await Task.Delay(200);
+            }
+           
+        }
 
 
 

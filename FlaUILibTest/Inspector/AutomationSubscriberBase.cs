@@ -11,13 +11,18 @@ public abstract class AutomationSubscriberBase
     private readonly object _lock = new();
 
     public ConditionBase SelfCondition { get; init; }
-    private readonly Module _module;
+    private Module _module;
+    private ModuleFinder _moduleFinder;
 
-    public AutomationSubscriberBase(Module module, ConditionBase condition)
+    public AutomationSubscriberBase(ModuleFinder moduleFinder, ConditionBase condition)
+    {
+        SelfCondition = condition;
+        _moduleFinder = moduleFinder;
+    }
+
+    public void SetModule(Module module)
     {
         _module = module;
-        SelfCondition = condition;
-        _module.AddSubscriber(this);
     }
 
     public void Update(AutomationElement? element)
@@ -25,10 +30,6 @@ public abstract class AutomationSubscriberBase
         lock (_lock)
         {
             _cached = element;
-            if (element != null && _pendingRequest != null)
-            {
-                _pendingRequest.TrySetResult(element);
-            }
         }
     }
 
@@ -36,14 +37,12 @@ public abstract class AutomationSubscriberBase
     {
         lock (_lock)
         {
-            _pendingRequest = null;
-
-            if (_cached != null && _module.State == ModuleState.Ready)
+            if (_cached != null && (_module == null || _module.State == ModuleState.Ready))
                 return _cached;
-
-            _pendingRequest = new TaskCompletionSource<AutomationElement>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
-        return await _pendingRequest.Task.WaitAsync(TimeSpan.FromMilliseconds(Timeout));
+        _cached = await _moduleFinder.RegisterAndGetElementAsync(SelfCondition);
+
+        return _cached;
     }
 }
