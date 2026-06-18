@@ -11,18 +11,12 @@ public abstract class AutomationSubscriberBase
     private readonly object _lock = new();
 
     public ConditionBase SelfCondition { get; init; }
-    private Module _module;
     private ModuleFinder _moduleFinder;
 
     public AutomationSubscriberBase(ModuleFinder moduleFinder, ConditionBase condition)
     {
         SelfCondition = condition;
         _moduleFinder = moduleFinder;
-    }
-
-    public void SetModule(Module module)
-    {
-        _module = module;
     }
 
     public void Update(AutomationElement? element)
@@ -37,7 +31,7 @@ public abstract class AutomationSubscriberBase
     {
         lock (_lock)
         {
-            if (_cached != null && (_module == null || _module.State == ModuleState.Ready))
+            if (_cached != null)
                 return _cached;
         }
 

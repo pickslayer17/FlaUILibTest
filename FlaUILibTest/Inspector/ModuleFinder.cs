@@ -2,15 +2,11 @@
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.Identifiers;
-using System.Reflection;
 
 namespace FlaUILibTest.Inspector;
 
 public class ModuleFinder
 {
-    private Module _module;
-
-
     private AutomationElement _root;
     private readonly string _name;
     private int _searchCount;
@@ -102,26 +98,14 @@ public class ModuleFinder
             changeType == StructureChangeType.ChildrenInvalidated)) return;
 
         var info = GetElementInfo(element);
-        //Log($"STRUCTURE ChildAdded | {info}");
+        Log($"STRUCTURE ChildAdded | {info}");
         TryResolveByDescendant(element, info);
-
-        if (_module?.Self != null)
-        {
-            try
-            {
-                var moduleRid = _module.Self.Properties.RuntimeId.ValueOrDefault;
-                var eventRid = element.Properties.RuntimeId.ValueOrDefault;
-                if (moduleRid != null && eventRid != null && moduleRid.SequenceEqual(eventRid))
-                    _module.Notify(changeType);
-            }
-            catch { }
-        }
     }
 
     private void OnPropertyChanged(AutomationElement element, PropertyId propertyId, object newValue)
     {
         var info = GetElementInfo(element);
-        //Log($"PROPERTY {propertyId.Name} = {newValue} | {info}");
+        Log($"PROPERTY {propertyId.Name} = {newValue} | {info}");
         TryResolveByMatch(element, info);
     }
 
@@ -137,8 +121,8 @@ public class ModuleFinder
     {
         var info = GetElementInfo(element);
         Log($"WINDOW_CLOSED | {info}");
-        //TryResolveByMatch(element, info);
-        //TryResolveByDescendant(element, info);
+        TryResolveByMatch(element, info);
+        TryResolveByDescendant(element, info);
     }
 
     private void TryResolveByDescendant(AutomationElement element, string elementInfo)
@@ -153,12 +137,6 @@ public class ModuleFinder
                 {
                     Log($">>> RESOLVED [descendant] #{searchNum} from {elementInfo}");
                     watch.tcs.TrySetResult(found);
-
-                    _module = new Module(this, element);
-                    _module.AddSubscriber(new Element(this, watch.condition));
-
-                    Log(">>> module created");
-                    
                 }
             }
             catch { }
