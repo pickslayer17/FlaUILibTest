@@ -7,6 +7,8 @@ namespace FlaUILibTest.Inspector;
 
 public class ModuleFinder
 {
+    public Action<ModuleFinder, EventId, AutomationElement, string> OnWindowEvent;
+
     private AutomationElement _root;
     private readonly string _name;
     private int _searchCount;
@@ -115,6 +117,7 @@ public class ModuleFinder
         Log($"WINDOW_OPENED | {info}");
         TryResolveByMatch(element, info);
         TryResolveByDescendant(element, info);
+        OnWindowEvent?.Invoke(this, eventId, element, "windowOpened");
     }
 
     private void OnWindowClosed(AutomationElement element, EventId eventId)
@@ -123,6 +126,7 @@ public class ModuleFinder
         Log($"WINDOW_CLOSED | {info}");
         TryResolveByMatch(element, info);
         TryResolveByDescendant(element, info);
+        OnWindowEvent?.Invoke(this, eventId, element, "windowClosed");
     }
 
     private void TryResolveByDescendant(AutomationElement element, string elementInfo)

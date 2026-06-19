@@ -1,6 +1,7 @@
 ﻿using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
+using FlaUI.Core.Identifiers;
 using FlaUI.UIA3;
 using FlaUILibTest.Inspector;
 using System.Diagnostics;
@@ -35,7 +36,7 @@ public class UIDriver : IDisposable
     {
         _application = Application.Launch(processStartInfo);
         _rootWindow = _application.GetMainWindow(_automation);
-        var moduleFinder = new ModuleFinder(_rootWindow);
+        var moduleFinder = CreateModuleFinder(_rootWindow);
         _windowFinders.TryAdd(_rootWindow, moduleFinder);
         _currentFinder = moduleFinder;
     }
@@ -57,11 +58,30 @@ public class UIDriver : IDisposable
         return false;
     }
 
+    private ModuleFinder CreateModuleFinder(Window window)
+    {
+        var finder = new ModuleFinder(window);
+        finder.OnWindowEvent = WindowEventHandler;
+
+        return finder;
+    }
+
+    private readonly object _windowLock = new();
+    private void WindowEventHandler(ModuleFinder finder, EventId eventId, AutomationElement eventElement, string eventName)
+    {
+        lock (_windowLock)
+        {
+            //if blabla WindowOpened(window)
+            // if blabla WindowClose(window)
+        }
+    }
+
     private bool WindowOpened(Window window)
     {
         if (!_windowFinders.ContainsKey(window))
         {
-            return _windowFinders.TryAdd(window, new ModuleFinder(window));
+            var moduleFineder = CreateModuleFinder(window);
+            return _windowFinders.TryAdd(window, moduleFineder);
         }
         else
         {
