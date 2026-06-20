@@ -2,12 +2,14 @@
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.Identifiers;
+using System.Xml.Linq;
 
 namespace FlaUILibTest.Inspector;
 
 public class ModuleFinder
 {
     public Action<ModuleFinder, EventId, AutomationElement, string> OnWindowEvent;
+    public Func<AutomationElement, ConditionBase, AutomationElement> SearchFunc;
 
     private AutomationElement _root;
     private readonly string _name;
@@ -44,7 +46,8 @@ public class ModuleFinder
     {
         lock (_searchLock)
         {
-            return root.FindFirstDescendant(condition);
+            var found = SearchFunc?.Invoke(root, condition);
+            return found;
         }
     }
 
@@ -177,6 +180,6 @@ public class ModuleFinder
 
     private void Log(string message)
     {
-        Console.WriteLine($"[{_name}] {message}");
+        //Console.WriteLine($"[{_name}] {message}");
     }
 }

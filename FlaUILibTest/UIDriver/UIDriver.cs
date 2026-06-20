@@ -15,7 +15,8 @@ public class UIDriver : IDisposable
     private Dictionary<Window, ModuleFinder> _windowFinders = new();
     private Window _rootWindow;
     private ModuleFinder _currentFinder;
-
+    private ConditionFactory CF;
+    private SearchManager _searchManager = new SearchManager();
     public List<Window> ApplicationWindows
     {
         get
@@ -23,7 +24,6 @@ public class UIDriver : IDisposable
             return new List<Window>(_windowFinders.Keys);
         }
     }
-    public ConditionFactory CF;
 
     public UIDriver()
     {
@@ -41,8 +41,9 @@ public class UIDriver : IDisposable
         _currentFinder = moduleFinder;
     }
 
-    public UILocator UILocator(ConditionBase by)
+    public UILocator UILocator(Func<ConditionFactory, ConditionBase> byFunc)
     {
+        var by = byFunc(CF);
         return new UILocator(_currentFinder, by);
     }
 
@@ -62,6 +63,7 @@ public class UIDriver : IDisposable
     {
         var finder = new ModuleFinder(window);
         finder.OnWindowEvent = WindowEventHandler;
+        finder.SearchFunc = _searchManager.FindFirst;
 
         return finder;
     }
@@ -71,6 +73,7 @@ public class UIDriver : IDisposable
     {
         lock (_windowLock)
         {
+            Log($"Window event - {eventId.Name}");
             //if blabla WindowOpened(window)
             // if blabla WindowClose(window)
         }
@@ -128,5 +131,10 @@ public class UIDriver : IDisposable
     {
         _automation.Dispose();
         // _windowFinders dispose finders
+    }
+
+    private void Log(string message)
+    {
+        Console.WriteLine($"[<<driver>>] {message}");
     }
 }

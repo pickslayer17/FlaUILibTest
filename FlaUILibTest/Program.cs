@@ -7,30 +7,29 @@ using FlaUI.UIA3;
 using FlaUILibTest;
 using FlaUILibTest.DcPushBenchMark;
 using FlaUILibTest.Inspector;
+using FlaUILibTest.UIDriver;
 using System.Diagnostics;
-using System.Security.Cryptography;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 class Program
 {
     static async Task Main()
     {
-        //var driver = new UIDriver();
-        //var window = driver.LaunchApplication(processStartInfo);
+        var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
+        {
+            WindowStyle = ProcessWindowStyle.Normal
+        };
+        processStartInfo.EnvironmentVariables["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = "--remote-debugging-port=9234";
+        processStartInfo.UseShellExecute = false;
 
-        //await driver.Locator(By.Tab("Insert")).ClickAsync();
-        //await driver.Locator(By.Button("Table")).ClickAsync();
+        var driver = new UIDriver();
+        driver.LaunchApplication(processStartInfo);
 
-        //driver.SwitchTo(By.Window("Create Table"));
-        //await driver.Locator(By.Button("OK")).ClickAsync();
+        var elementFromDrvier = driver.UILocator(cf => cf.ByControlType(ControlType.DataItem).And(cf.ByName("A1")));
+        Console.WriteLine("works!");
+        await elementFromDrvier.ClickAsync();
 
         //driver.SwitchToMainContent();
-        //var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
-        //{
-        //    WindowStyle = ProcessWindowStyle.Normal
-        //};
-        //processStartInfo.EnvironmentVariables["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = "--remote-debugging-port=9234";
-        //processStartInfo.UseShellExecute = false;
+
         //var application = Application.Launch(processStartInfo);
         //var automation = new UIA3Automation();
         //var window = application.GetMainWindow(automation);
@@ -43,11 +42,11 @@ class Program
 
 
 
-        var test = new DcPushTest();
+        //var test = new DcPushTest();
 
-        test.RunPreconditions();
-        await test.RunTestAsync();
-        test.CleanUp();
+        //test.RunPreconditions();
+        //await test.RunTestAsync();
+        //test.CleanUp();
 
         //Console.OutputEncoding = System.Text.Encoding.UTF8;
 
