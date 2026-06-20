@@ -8,7 +8,7 @@ namespace FlaUILibTest.Inspector;
 public class WindowFinder : IDisposable
 {
     public Action<WindowFinder, EventId, AutomationElement, string> OnWindowEvent;
-    public Func<AutomationElement, ConditionBase, AutomationElement> SearchFunc;
+    public Func<AutomationElement, ConditionBase, AutomationElement> SearchFunc { get; set; }
 
     private AutomationElement _root;
     public int[] RootRuntimeId { get; }
@@ -51,8 +51,9 @@ public class WindowFinder : IDisposable
         }
     }
 
-    public WindowFinder(Window window, string name = "default")
+    public WindowFinder(Window window, Func<AutomationElement, ConditionBase, AutomationElement> searchFunc)
     {
+        SearchFunc = searchFunc;
         RootRuntimeId = window.Properties.RuntimeId.ValueOrDefault;
         Name = window.Properties.Name.ValueOrDefault;
         Subscribe(window);

@@ -1,4 +1,5 @@
 ﻿using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Conditions;
 using FlaUI.Core.Identifiers;
 using FlaUI.UIA3;
 
@@ -6,8 +7,8 @@ namespace FlaUILibTest.Inspector;
 
 public class WindowManager
 {
+    private readonly Lock _searchLock = new();
     private readonly UIA3Automation _automation;
-    private readonly SearchManager _searchManager = new SearchManager();
     private readonly Lock _windowLock = new();
 
     private List<WindowFinder> WindowFinders
@@ -25,10 +26,9 @@ public class WindowManager
 
     public WindowFinder CreateWindowFinder(Window window)
     {
-        var finder = new WindowFinder(window)
+        var finder = new WindowFinder(window, FindFirst)
         {
             OnWindowEvent = WindowEventHandler,
-            SearchFunc = _searchManager.FindFirst
         };
         WindowFinders.Add(finder);
         Log($"Finder created for window [{finder.Name}] with RuntimeId [{string.Join(",", finder.RootRuntimeId)}]");
@@ -40,6 +40,14 @@ public class WindowManager
         var finders = WindowFinders.Where(w => w.RootRuntimeId.SequenceEqual(runtimeId)).ToList();
         if (finders.Count != 1) throw new Exception($"RuntimeId [{string.Join(",", runtimeId)}] found in {finders.Count} finders!");
         return finders[0];
+    }
+    
+    public AutomationElement FindFirst(AutomationElement root, ConditionBase condition)
+    {
+        lock (_searchLock)
+        {
+            return root.FindFirstDescendant(condition);
+        }
     }
 
     private void WindowEventHandler(WindowFinder finder, EventId eventId, AutomationElement eventElement, string eventName)

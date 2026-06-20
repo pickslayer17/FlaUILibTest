@@ -9,6 +9,7 @@ using FlaUILibTest.DcPushBenchMark;
 using FlaUILibTest.Inspector;
 using FlaUILibTest.UIDriver;
 using System.Diagnostics;
+using Interop.UIAutomationClient;
 
 class Program
 {
@@ -28,19 +29,6 @@ class Program
         Console.WriteLine("works!");
         await elementFromDrvier.ClickAsync();
 
-        //driver.SwitchToMainContent();
-
-        //var application = Application.Launch(processStartInfo);
-        //var automation = new UIA3Automation();
-        //var window = application.GetMainWindow(automation);
-        //var cf = automation.ConditionFactory;
-        //var finder = new ModuleFinder(window);
-
-        //var cellA1 = await finder.RegisterAndGetElementAsync(
-        //    cf.ByControlType(ControlType.DataItem).And(cf.ByName("A1"))
-        //);
-
-
 
         //var test = new DcPushTest();
 
@@ -48,114 +36,58 @@ class Program
         //await test.RunTestAsync();
         //test.CleanUp();
 
-        //Console.OutputEncoding = System.Text.Encoding.UTF8;
-
-        //var psi = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
-        //{
-        //    WindowStyle = ProcessWindowStyle.Normal
-        //};
-        //var application = Application.Launch(psi);
-        //var automation = new UIA3Automation();
-        //var window = application.GetMainWindow(automation);
-        //var cf = automation.ConditionFactory;
-
-        //var tree = new UITree(window);
-        //tree.WatchElement(conditionFactory.ByControlType(ControlType.DataItem).And(conditionFactory.ByName("A1")));
-        //tree.SubscribeToEvents(window);
-        //await tree.BuildAsync();
-
-        //var finder = new ModuleFinder();
-        //finder.Subscribe(window);
-        //var cellA1Task = finder.Register(cf.ByControlType(ControlType.DataItem).And(cf.ByName("A1")));
-        //var cellA1 = await cellA1Task;
-        //cellA1.Click();
-
-
-
-
-        //Console.WriteLine( "wait for blank to grid action");
         //Console.ReadLine();
-        //window.RegisterPropertyChangedEvent(TreeScope.Subtree, (el, propId, val) =>
-        //{
-        //    Console.WriteLine($"--- WINDOW DIRECT: {propId.Name} = {val}");
-        //},
-        //    PropertyId.Register(AutomationType.UIA3, 30003, "Name"),
-        //    PropertyId.Register(AutomationType.UIA3, 30010, "IsEnabled"),
-        //    PropertyId.Register(AutomationType.UIA3, 30005, "BoundingRectangle")
+        //Console.WriteLine("started...");
+
+        //var uia = new CUIAutomationClass();
+
+        //// получаем root element
+        //var root = uia.GetRootElement();
+
+        //// находим окно Excel
+        //var condition = uia.CreatePropertyCondition(30005, "Book1 - Excel"); // 30005 = Name
+        //var excelWindow = root.FindFirst(Interop.UIAutomationClient.TreeScope.TreeScope_Descendants, condition);
+
+        //// подписываемся на WindowClosed
+        //uia.AddAutomationEventHandler(
+        //    20017, // WindowClosedEvent ID
+        //    excelWindow,
+        //    Interop.UIAutomationClient.TreeScope.TreeScope_Subtree,
+        //    null, // no cache
+        //    new WindowClosedHandler()
         //);
 
-        //window.RegisterStructureChangedEvent(TreeScope.Subtree, (el, changeType, rid) =>
-        //{
-        //    var name = "";
-        //    var cls = "";
-        //    try { name = el.Properties.Name.ValueOrDefault; } catch { }
-        //    try { cls = el.Properties.ClassName.ValueOrDefault; } catch { }
-        //    Console.WriteLine($"--- WINDOW STRUCTURE: {changeType} | {name} | {cls}");
-        //});
-
-        //Console.WriteLine("window subscribed. Click cells...");
-        //Console.ReadLine();
-
-        // EventManagerExtended.Instance.SubscribeAll(window);
-
-        //// 1. Подписка
-        //EventManager.Instance.Subscribe(window);
-
-        //// 2. Модуль — якорь XLDESK
-        //var gridModule = new Module(window, conditionFactory.ByClassName("XLDESK"));
-
-        //// 4. Элемент — ячейка A1
-        //var cellA1 = new Element(gridModule,
-        //   conditionFactory.ByControlType(ControlType.DataItem).And(conditionFactory.ByName("A1")));
-
-        //await cellA1.ClickAsync();
+        //Console.WriteLine("subscribed...");
 
 
         Console.ReadLine();
     }
 
-    static AutomationElement GetElement(AutomationElement root, ConditionBase condition, int timeoutMs = 10000)
-    {
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-        while (DateTime.UtcNow < deadline)
-        {
-            var found = root.FindFirstDescendant(condition);
-            if (found != null)
-                return found;
-            Thread.Sleep(200);
-        }
-        throw new TimeoutException($"Element not found within {timeoutMs}ms");
-    }
+}
 
-    static AutomationElement GetElementByXPath2(AutomationElement root, string xpath, int timeoutMs = 10000)
+public class WindowClosedHandler : IUIAutomationEventHandler
+{
+    public void HandleAutomationEvent(IUIAutomationElement sender, int eventId)
     {
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-        while (DateTime.UtcNow < deadline)
+        // sender — элемент который стрельнул
+        // пробуем снять runtimeId
+        try
         {
-            var found = root.FindFirstByXPath(xpath);
-            if (found != null)
-                return found;
-            Thread.Sleep(200);
+            var rid = sender.GetRuntimeId();
+            Console.WriteLine($"CLOSED: rid=[{string.Join(",", rid)}]");
         }
-        throw new TimeoutException($"Element not found within {timeoutMs}ms");
-    }
+        catch
+        {
+            Console.WriteLine("CLOSED: sender dead");
+        }
 
-    static AutomationElement GetElementByXPath(AutomationElement root, string xpath, int timeoutMs = 10000)
-    {
-        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-        while (DateTime.UtcNow < deadline)
+        try
         {
-            try
-            {
-                if (root.FindAllByXPath(xpath).Length != 0)
-                {
-                    var element = root.FindFirstByXPath(xpath);
-                    return element;
-                }
-            }
-            catch { }
-            Thread.Sleep(200);
+            Console.WriteLine($"CLOSED: name={sender.CurrentName}");
         }
-        throw new TimeoutException($"Element not found within {timeoutMs}ms");
+        catch
+        {
+            Console.WriteLine("CLOSED: name dead");
+        }
     }
 }
