@@ -2,17 +2,17 @@
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.Identifiers;
-using System.Xml.Linq;
 
 namespace FlaUILibTest.Inspector;
 
-public class ModuleFinder
+public class WindowFinder : IDisposable
 {
-    public Action<ModuleFinder, EventId, AutomationElement, string> OnWindowEvent;
+    public Action<WindowFinder, EventId, AutomationElement, string> OnWindowEvent;
     public Func<AutomationElement, ConditionBase, AutomationElement> SearchFunc;
 
     private AutomationElement _root;
-    private readonly string _name;
+    public int[] RootRuntimeId { get; }
+    public string Name { get; }
     private int _searchCount;
     
     private readonly Lock _watchesLock = new();
@@ -51,12 +51,11 @@ public class ModuleFinder
         }
     }
 
-    private ModuleFinder() { }
-
-    public ModuleFinder(Window element, string name = "default")
+    public WindowFinder(Window window, string name = "default")
     {
-        _name = name;
-        Subscribe(element);
+        RootRuntimeId = window.Properties.RuntimeId.ValueOrDefault;
+        Name = window.Properties.Name.ValueOrDefault;
+        Subscribe(window);
     }
 
     private void Subscribe(Window window)
@@ -102,14 +101,14 @@ public class ModuleFinder
             changeType == StructureChangeType.ChildrenInvalidated)) return;
 
         var info = GetElementInfo(element);
-        Log($"STRUCTURE ChildAdded | {info}");
+        //Log($"STRUCTURE ChildAdded | {info}");
         TryResolveByDescendant(element, info);
     }
 
     private void OnPropertyChanged(AutomationElement element, PropertyId propertyId, object newValue)
     {
         var info = GetElementInfo(element);
-        Log($"PROPERTY {propertyId.Name} = {newValue} | {info}");
+        //Log($"PROPERTY {propertyId.Name} = {newValue} | {info}");
         TryResolveByMatch(element, info);
     }
 
@@ -180,6 +179,11 @@ public class ModuleFinder
 
     private void Log(string message)
     {
-        //Console.WriteLine($"[{_name}] {message}");
+        LogManager.Log($"Finder '{Name}'", message);
+    }
+
+    public void Dispose()
+    {
+        Log("Disposing finder and cancelling pending watches[not implemented yet]");
     }
 }

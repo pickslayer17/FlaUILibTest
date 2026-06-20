@@ -12,18 +12,16 @@ public class UIDriver : IDisposable
 {
     private Application _application;
     private UIA3Automation _automation;
-    private Dictionary<Window, ModuleFinder> _windowFinders = new();
-    private Window _rootWindow;
-    private ModuleFinder _currentFinder;
-    private ConditionFactory CF;
-    private SearchManager _searchManager = new SearchManager();
-    public List<Window> ApplicationWindows
+    private List<WindowFinder> WindowFinders
     {
         get
         {
-            return new List<Window>(_windowFinders.Keys);
+            return field;
         }
-    }
+    } = new();
+    private Window _rootWindow;
+    private ConditionFactory CF;
+    private SearchManager _searchManager = new SearchManager();
 
     public UIDriver()
     {
@@ -31,100 +29,93 @@ public class UIDriver : IDisposable
         CF = _automation.ConditionFactory;
     }
 
-
     public void LaunchApplication(ProcessStartInfo processStartInfo)
     {
         _application = Application.Launch(processStartInfo);
         _rootWindow = _application.GetMainWindow(_automation);
-        var moduleFinder = CreateModuleFinder(_rootWindow);
-        _windowFinders.TryAdd(_rootWindow, moduleFinder);
-        _currentFinder = moduleFinder;
+        CreateWindowFinder(_rootWindow);
+    }
+
+    private void CreateWindowFinder(Window window)
+    {
+        var finder = new WindowFinder(window)
+        {
+            OnWindowEvent = WindowEventHandler,
+            SearchFunc = _searchManager.FindFirst
+        };
+        WindowFinders.Add(finder);
+        Log($"Window context created for window [{finder.Name}] with RuntimeId [{string.Join(",", finder.RootRuntimeId)}]");
+    }
+
+    private WindowFinder GetFinderByWindowRunTimeId(int[] runtimeId)
+    {
+        var finders = WindowFinders.Where(w => w.RootRuntimeId.SequenceEqual(runtimeId)).ToList();
+        if (finders.Count != 1) throw new Exception("!!!pizdec");
+        var finder = finders[0];
+
+        return finder;
     }
 
     public UILocator UILocator(Func<ConditionFactory, ConditionBase> byFunc)
     {
         var by = byFunc(CF);
-        return new UILocator(_currentFinder, by);
+
+        // here we can add some logic to understand which window to use for search 
+
+        var rootRuntimeId = GetWindowRuntimeId(_rootWindow);
+        var finder = GetFinderByWindowRunTimeId(rootRuntimeId);
+
+        return new UILocator(finder, by);
     }
 
-    public bool SwitchToWindow(Window window)
-    {
-        if (_windowFinders.TryGetValue(window, out var finder))
-        {
-            _currentFinder = finder;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private ModuleFinder CreateModuleFinder(Window window)
-    {
-        var finder = new ModuleFinder(window);
-        finder.OnWindowEvent = WindowEventHandler;
-        finder.SearchFunc = _searchManager.FindFirst;
-
-        return finder;
-    }
+    private int[] GetWindowRuntimeId(Window element) => element.Properties.RuntimeId.ValueOrDefault;
 
     private readonly Lock _windowLock = new();
-    private void WindowEventHandler(ModuleFinder finder, EventId eventId, AutomationElement eventElement, string eventName)
+    private void WindowEventHandler(WindowFinder finder, EventId eventId, AutomationElement eventElement, string eventName)
     {
         lock (_windowLock)
         {
-            Log($"Window event - {eventId.Name}");
-            //if blabla WindowOpened(window)
-            // if blabla WindowClose(window)
+            if (eventId.Equals(_automation.EventLibrary.Window.WindowOpenedEvent))
+            {
+                var runtimeId = string.Join(",", eventElement.Properties.RuntimeId.ValueOrDefault ?? []);
+                var title = eventElement.Properties.Name.ValueOrDefault;
+                Log($"window opened event" +
+                    $" [{runtimeId}]:" +
+                    $" Title = [{title}]");
+                var success = WindowOpened(eventElement.AsWindow());
+                Log(success ? $"Finder '{title}' created." : "something went wrong!!!");
+            }
+            else if (eventId.Equals(_automation.EventLibrary.Window.WindowClosedEvent))
+            {
+                Log($"window closed event");
+                var success = WindowClosed(finder.RootRuntimeId);
+                Log(success ? $"Finder {finder.Name} removed." : "something went wrong!!!");
+            }
         }
     }
 
     private bool WindowOpened(Window window)
     {
-        if (!_windowFinders.ContainsKey(window))
+        var runtimeId = window.Properties.RuntimeId.ValueOrDefault;
+        if (WindowFinders.Any(w => w.RootRuntimeId.SequenceEqual(runtimeId)))
         {
-            var moduleFineder = CreateModuleFinder(window);
-            return _windowFinders.TryAdd(window, moduleFineder);
-        }
-        else
-        {
+            Log("ERROR!!!!Window already exists in driver!!!!!");
             return false;
         }
+        CreateWindowFinder(window);
+        return true;
     }
 
-    private bool WindowClosed(Window window)
+    private bool WindowClosed(int[] runtimeId)
     {
-        // here is very complex logic - dont want to spend time on it
-
-        if (window == _rootWindow)
+        var finder = GetFinderByWindowRunTimeId(runtimeId);
+        var success = WindowFinders.Remove(finder);
+        if (success)
         {
-            // exception ok kill everything
+            finder.Dispose();
         }
 
-        if (!_windowFinders.ContainsKey(window))
-        {
-            if (_windowFinders.TryGetValue(window, out var finder) )
-            {
-                if (finder == _windowFinders[_rootWindow])
-                {
-                    throw new Exception("somthing went completely wrong");
-                } 
-                else if (finder == _currentFinder)
-                {
-                    _currentFinder = _windowFinders[_rootWindow];
-                }
-                else
-                {
-                }
-                //finder.dispose
-            }
-            
-            return _windowFinders.Remove(window);
-        }
-        else
-        {
-            return false;
-        }
+        return success;
     }
 
     public void Dispose()
@@ -133,8 +124,8 @@ public class UIDriver : IDisposable
         // _windowFinders dispose finders
     }
 
-    private void Log(string message)
+    private void Log(string message, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
     {
-        Console.WriteLine($"[<<driver>>] {message}");
+        LogManager.Log($"DRIVER::{caller}", message);
     }
 }

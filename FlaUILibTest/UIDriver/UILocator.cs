@@ -6,10 +6,10 @@ namespace FlaUILibTest.UIDriver;
 
 public class UILocator
 {
-    private readonly ModuleFinder _finder;
+    private readonly WindowFinder _finder;
     private readonly ConditionBase _condition;
 
-    internal UILocator(ModuleFinder finder, ConditionBase condition)
+    internal UILocator(WindowFinder finder, ConditionBase condition)
     {
         _finder = finder;
         _condition = condition;

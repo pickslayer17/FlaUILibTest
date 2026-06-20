@@ -34,7 +34,7 @@ public class DcPushTest
     private int clientId;
     private int _listId;
 
-    private ModuleFinder _finder;
+    private WindowFinder _finder;
     private Window window;
 
     private async Task<AutomationElement> GetElement(ConditionBase condition)
@@ -65,7 +65,7 @@ public class DcPushTest
         var application = Application.Launch(processStartInfo);
         var automation = new UIA3Automation();
         var window = application.GetMainWindow(automation);
-        _finder = new ModuleFinder(window);
+        _finder = new WindowFinder(window);
         var cf = automation.ConditionFactory;
         var playwright = await Playwright.CreateAsync();
 
@@ -146,7 +146,7 @@ public class DcPushTest
 
         // switch to push dialog
         var mainWindowFinder = _finder;
-        _finder = new ModuleFinder(dcPushWindow.AsWindow(), "dcPush");
+        _finder = new WindowFinder(dcPushWindow.AsWindow(), "dcPush");
 
         var valueInput = await GetElement(cf.ByControlType(ControlType.Edit).And(cf.ByAutomationId("valueInput")));
         valueInput.AsTextBox().Text = cellA1Name;

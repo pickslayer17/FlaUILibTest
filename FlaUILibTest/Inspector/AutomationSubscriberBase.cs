@@ -9,9 +9,9 @@ public abstract class AutomationSubscriberBase
     private readonly Lock _lock = new();
 
     public ConditionBase SelfCondition { get; init; }
-    private ModuleFinder _moduleFinder;
+    private WindowFinder _moduleFinder;
 
-    public AutomationSubscriberBase(ModuleFinder moduleFinder, ConditionBase condition)
+    public AutomationSubscriberBase(WindowFinder moduleFinder, ConditionBase condition)
     {
         SelfCondition = condition;
         _moduleFinder = moduleFinder;
