@@ -12,8 +12,8 @@ public class ModuleFinder
     private AutomationElement _root;
     private readonly string _name;
     private int _searchCount;
-
-    private readonly object _watchesLock = new();
+    
+    private readonly Lock _watchesLock = new();
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> _watches = new();
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> Watches
     {
@@ -39,7 +39,7 @@ public class ModuleFinder
     }
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> PendingWatches => Watches.Where(w => !w.tcs.Task.IsCompleted).ToList();
 
-    private readonly object _searchLock = new();
+    private readonly Lock _searchLock = new();
 
     public AutomationElement DefaultSearch(AutomationElement root, ConditionBase condition)
     {

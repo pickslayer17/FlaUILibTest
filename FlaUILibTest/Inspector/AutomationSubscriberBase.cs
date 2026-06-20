@@ -6,7 +6,7 @@ namespace FlaUILibTest.Inspector;
 public abstract class AutomationSubscriberBase
 {
     private AutomationElement? _cached;
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
 
     public ConditionBase SelfCondition { get; init; }
     private ModuleFinder _moduleFinder;

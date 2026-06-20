@@ -66,7 +66,7 @@ public class UIDriver : IDisposable
         return finder;
     }
 
-    private readonly object _windowLock = new();
+    private readonly Lock _windowLock = new();
     private void WindowEventHandler(ModuleFinder finder, EventId eventId, AutomationElement eventElement, string eventName)
     {
         lock (_windowLock)
