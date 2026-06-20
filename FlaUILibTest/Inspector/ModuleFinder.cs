@@ -14,29 +14,28 @@ public class ModuleFinder
     private int _searchCount;
     
     private readonly Lock _watchesLock = new();
-    private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> _watches = new();
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> Watches
     {
         get
         {
             lock (_watchesLock)
             {
-                return _watches;
+                return field;
             }
         }
         set
         {
             lock (_watchesLock)
             {
-                if (_watches != null)
+                if (field != null)
                 {
-                    foreach (var watch in _watches.Where(w => !w.tcs.Task.IsCompleted))
+                    foreach (var watch in field.Where(w => !w.tcs.Task.IsCompleted))
                         watch.tcs.TrySetCanceled();
                 }
-                _watches = value;
+                field = value;
             }
         }
-    }
+    } = new();
     private List<(ConditionBase condition, TaskCompletionSource<AutomationElement> tcs)> PendingWatches => Watches.Where(w => !w.tcs.Task.IsCompleted).ToList();
 
     private readonly Lock _searchLock = new();
@@ -79,7 +78,7 @@ public class ModuleFinder
                 [
                     UiaPropertyHelper.GetPropertyId(UiaProperty.BoundingRectangle)
                 ]
-                ).ToArray()); //TestProperties);
+                ).ToArray());
     }
 
     public async Task<AutomationElement> RegisterAndGetElementAsync(ConditionBase condition, int timeoutMs = 15000)
