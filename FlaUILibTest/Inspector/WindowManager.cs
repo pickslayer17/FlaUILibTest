@@ -185,6 +185,26 @@ public record WindowRunTimeId
 
     public int[] RuntimeId => new List<int>(_runtimeId).ToArray();
 
+    // Структурное сравнение по содержимому массива (record по умолчанию сравнивал бы int[] по ссылке).
+    public virtual bool Equals(WindowRunTimeId other)
+    {
+        if (other is null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        if (_runtimeId is null || other._runtimeId is null) return _runtimeId is null && other._runtimeId is null;
+        if (_runtimeId.Length != other._runtimeId.Length) return false;
+        for (int i = 0; i < _runtimeId.Length; i++)
+            if (_runtimeId[i] != other._runtimeId[i]) return false;
+        return true;
+    }
+
+    public override int GetHashCode()
+    {
+        if (_runtimeId is null) return 0;
+        var hash = new HashCode();
+        foreach (var id in _runtimeId) hash.Add(id);
+        return hash.ToHashCode();
+    }
+
     public override string ToString()
     {
         return _runtimeId == null? null : $"[{string.Join(",", _runtimeId)}]";
