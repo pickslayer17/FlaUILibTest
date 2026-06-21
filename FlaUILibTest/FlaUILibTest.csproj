@@ -21,4 +21,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FlaUIMonitor\FlaUIMonitor.csproj" />
+  </ItemGroup>
+
 </Project>

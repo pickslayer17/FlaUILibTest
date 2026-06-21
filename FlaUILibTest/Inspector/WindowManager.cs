@@ -7,6 +7,7 @@ using FlaUILibTest.Extensions;
 using FlaUILibTest.Helpers;
 using FlaUILibTest.Interfaces;
 using FlaUILibTest.UIDriver;
+using FlaUIMonitor;
 using System.Collections.Concurrent;
 
 namespace FlaUILibTest.Inspector;
@@ -66,6 +67,14 @@ public class WindowManager
     }
 
     public IElementSource CreateSource(BY windowBy = null) => new WindowElementSource(this, windowBy);
+
+    // Иммутабельный слепок текущего реестра finder'ов для монитора (Name + RuntimeId).
+    // Без _finderCreateLock: ConcurrentDictionary.Values сам отдаёт потокобезопасный снимок;
+    // массив клонируем, чтобы DTO не делил состояние с живым finder'ом.
+    public IReadOnlyList<FinderSnapshot> SnapshotFinders()
+        => WindowFinders.Values
+            .Select(f => new FinderSnapshot(f.Name, (int[])(f.RootRuntimeId?.Clone() ?? Array.Empty<int>())))
+            .ToList();
 
     public FinderBase GetRootWindowFinder() => GetFinderByWindowId(RootWindowRuntimeId);
 
@@ -132,6 +141,7 @@ public class WindowManager
         finder.StartListening();
 
         LogManager.Log($"Finder created for window [{finder.Name}] with RuntimeId [{string.Join(",", finder.RootRuntimeId)}]");
+        MonitorHelper.Publish(SnapshotFinders());
     }
     
     private void AddWindowFinder(int[] windowRunTimeId, WindowFinder finder)
@@ -172,6 +182,7 @@ public class WindowManager
         {
             finder.Dispose();
             LogManager.Log($"window closed, finder removed [{key}]");
+            MonitorHelper.Publish(SnapshotFinders());
         }
         else
         {

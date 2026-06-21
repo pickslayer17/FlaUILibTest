@@ -8,6 +8,7 @@ using FlaUILibTest;
 using FlaUILibTest.DcPushBenchMark;
 using FlaUILibTest.Inspector;
 using FlaUILibTest.UIDriver;
+using FlaUIMonitor;
 using Interop.UIAutomationClient;
 using System.Diagnostics;
 using System.Xml.Linq;
@@ -22,6 +23,8 @@ class Program
         };
         processStartInfo.EnvironmentVariables["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = "--remote-debugging-port=9234";
         processStartInfo.UseShellExecute = false;
+
+        MonitorApp.Start(); 
 
         var driver = new UIDriver();
         driver.LaunchApplication(processStartInfo);
