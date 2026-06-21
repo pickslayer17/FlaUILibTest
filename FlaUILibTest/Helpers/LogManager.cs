@@ -1,4 +1,4 @@
-﻿namespace FlaUILibTest.Inspector;
+﻿namespace FlaUILibTest.Helpers;
 
 public static class LogManager
 {

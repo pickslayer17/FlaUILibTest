@@ -2,6 +2,7 @@
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Identifiers;
 using FlaUI.UIA3;
+using FlaUILibTest.Helpers;
 
 namespace FlaUILibTest.Inspector;
 

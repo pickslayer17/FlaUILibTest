@@ -1,7 +1,7 @@
 ﻿using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
 
-namespace FlaUILibTest.Inspector;
+namespace FlaUILibTest.Helpers;
 public static class ConditionMatcher
 {
     public static bool Matches(AutomationElement element, ConditionBase condition)
