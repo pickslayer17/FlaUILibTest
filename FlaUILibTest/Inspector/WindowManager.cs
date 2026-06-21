@@ -2,48 +2,163 @@
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Identifiers;
 using FlaUI.UIA3;
+using FlaUILibTest.Constants;
+using FlaUILibTest.Extensions;
 using FlaUILibTest.Helpers;
+using FlaUILibTest.Interfaces;
+using FlaUILibTest.UIDriver;
+using System.Collections.Concurrent;
 
 namespace FlaUILibTest.Inspector;
 
 public class WindowManager
 {
+    private readonly Lock _desktopLock = new();
+    private readonly Lock _rootWindowLock = new ();
     private readonly Lock _searchLock = new();
-    private readonly UIA3Automation _automation;
-    private readonly Lock _windowLock = new();
+    private readonly Lock _windowEventLock = new();
+    private readonly Lock _finderCreateLock = new();
 
-    private List<WindowFinder> WindowFinders
+    private int[] DesktopRuntimeId
     {
+        get
+        {
+            if (field == null || field.ToFormattedString() == "")
+                throw new Exception("Desktop RuntimeId has not been set yet.");
+
+            return field;
+        }
+        set
+        {
+            lock(_desktopLock)
+            {
+                if (!(field == null || field.ToFormattedString() == "")) throw new Exception("trying set desktop runtimeid again");
+                field = value;
+            }
+        }
+    }
+    private int[] RootWindowRuntimeId
+    {
+        get
+        {
+            if (field == null || field.ToFormattedString() == "")
+                throw new Exception("Root window RuntimeId has not been set yet.");
+
+            return field;
+        }
+        set
+        {
+            lock (_rootWindowLock)
+            {
+                if (!(field == null || field.ToFormattedString() == "")) throw new Exception("trying set desktop runtimeid again");
+                field = value;
+            }
+        }
+    }
+    private ConcurrentDictionary<WindowRunTimeId, WindowFinder> WindowFinders {
         get
         {
             return field;
         }
     } = new();
 
-    public WindowManager(UIA3Automation automation)
+    public WindowManager()
     {
-        _automation = automation;
     }
 
-    public WindowFinder CreateWindowFinder(Window window)
+    public IElementSource CreateSource(BY windowBy = null) => new WindowElementSource(this, windowBy);
+
+    public FinderBase GetRootWindowFinder() => GetFinderByWindowId(RootWindowRuntimeId);
+
+    public async Task<FinderBase> FindInDesktop(BY windowBy)
     {
-        var finder = new WindowFinder(window, FindFirst)
+        var desktopFinder = GetFinderByWindowId(DesktopRuntimeId);
+        var window = await desktopFinder.RegisterAndGetElementAsync(windowBy);
+
+        if (!window.TryGetWindowRunTimeId(out int[] windowRunTimeId))
+            throw new Exception($"Failed to get RuntimeId for window found with condition [{windowBy}]. Cannot create finder for this window.");
+
+        var key = windowRunTimeId.ToWindowRunTimeId();
+
+        lock (_finderCreateLock)
         {
-            OnWindowEvent = WindowEventHandler,
-        };
-        WindowFinders.Add(finder);
-        Log($"Finder created for window [{finder.Name}] with RuntimeId [{string.Join(",", finder.RootRuntimeId)}]");
+            if (WindowFinders.TryGetValue(key, out var existing))
+                return existing;
+
+            CreateWindowFinder(window);
+            WindowFinders.TryGetValue(key, out var created);
+            return created;
+        }
+    }
+
+    private WindowFinder GetFinderByWindowId(int[] windowRunTimeId)
+    {
+        if (!WindowFinders.TryGetValue(windowRunTimeId.ToWindowRunTimeId(), out var finder))
+        {
+            LogManager.LogError("Desktop finder not found. Unable to perform search.");
+            throw new Exception("Desktop finder not found. Unable to perform search.");
+        }
+
         return finder;
     }
 
-    public WindowFinder GetFinderByRuntimeId(int[] runtimeId)
+    public void  CreateWindowFinder(AutomationElement window, FinderTypes finderType = FinderTypes.Window)
     {
-        var finders = WindowFinders.Where(w => w.RootRuntimeId.SequenceEqual(runtimeId)).ToList();
-        if (finders.Count != 1) throw new Exception($"RuntimeId [{string.Join(",", runtimeId)}] found in {finders.Count} finders!");
-        return finders[0];
+        var finder = new WindowFinder(window)
+        {
+            OnWindowOpenedFunc = WindowOpened,
+            OnWindowClosedFunc = WindowClosed,
+            SearchFunc = FindFirst
+        };
+
+        if(!window.TryGetWindowRunTimeId(out var windowRunTimeId)) 
+            throw new Exception($"Failed to get RuntimeId for window [{finder.Name}]. Finder creation aborted.");
+
+        AddWindowFinder(windowRunTimeId, finder);
+        switch(finderType)
+        {
+            case FinderTypes.Desktop:
+                DesktopRuntimeId = windowRunTimeId;
+                break;
+            case FinderTypes.RootWindow:
+                RootWindowRuntimeId = windowRunTimeId;
+                break;
+            case FinderTypes.Window:
+                break;
+            case FinderTypes.Element:
+                break;
+             default:
+                throw new Exception($"Unsupported finder type [{finderType}]");
+        }
+        finder.StartListening();
+
+        LogManager.Log($"Finder created for window [{finder.Name}] with RuntimeId [{string.Join(",", finder.RootRuntimeId)}]");
     }
     
-    public AutomationElement FindFirst(AutomationElement root, ConditionBase condition)
+    private void AddWindowFinder(int[] windowRunTimeId, WindowFinder finder)
+    {
+        // some checks here to ensure we don't add duplicates or invalid finders could be added here in the future if needed
+
+        WindowFinders.TryAdd(windowRunTimeId.ToWindowRunTimeId(), finder);
+    }
+
+    private void WindowOpened(FinderBase finder, AutomationElement eventElement, EventId eventId, int[] windowRunTimeId)
+    {
+        lock (_windowEventLock)
+        {
+            LogManager.Log("window opened");
+        }
+    }
+
+    private void WindowClosed(FinderBase finder, AutomationElement eventElement, EventId eventId, int[] windowRunTimeId)
+    {
+        lock (_windowEventLock)
+        {
+            LogManager.Log("window closed");
+        }
+    }
+
+    private AutomationElement FindFirst(AutomationElement root, ConditionBase condition)
     {
         lock (_searchLock)
         {
@@ -51,53 +166,29 @@ public class WindowManager
         }
     }
 
-    private void WindowEventHandler(WindowFinder finder, EventId eventId, AutomationElement eventElement, string eventName)
+    private AutomationElement[] FindAll(AutomationElement root, ConditionBase condition)
     {
-        lock (_windowLock)
+        lock (_searchLock)
         {
-            if (eventId.Equals(_automation.EventLibrary.Window.WindowOpenedEvent))
-            {
-                var runtimeId = string.Join(",", eventElement.Properties.RuntimeId.ValueOrDefault ?? []);
-                var title = eventElement.Properties.Name.ValueOrDefault;
-                Log($"window opened [{runtimeId}]: Title = [{title}]");
-                var success = WindowOpened(eventElement.AsWindow());
-                Log(success ? $"Finder '{title}' created." : "window not processed");
-            }
-            else if (eventId.Equals(_automation.EventLibrary.Window.WindowClosedEvent))
-            {
-                Log($"window closed from finder [{finder.Name}]");
-                var success = WindowClosed(finder.RootRuntimeId);
-                Log(success ? $"Finder {finder.Name} removed." : "finder not found");
-            }
+            return root.FindAllDescendants(condition);
         }
-    }
-
-    private bool WindowOpened(Window window)
-    {
-        var runtimeId = window.Properties.RuntimeId.ValueOrDefault;
-        if (WindowFinders.Any(w => w.RootRuntimeId.SequenceEqual(runtimeId)))
-        {
-            Log("Window already exists");
-            return false;
-        }
-        CreateWindowFinder(window);
-        return true;
-    }
-
-    private bool WindowClosed(int[] runtimeId)
-    {
-        var finder = GetFinderByRuntimeId(runtimeId);
-        var success = WindowFinders.Remove(finder);
-        if (success)
-        {
-            finder.Dispose();
-        }
-        return success;
-    }
-
-    private void Log(string message, [System.Runtime.CompilerServices.CallerMemberName] string caller = "")
-    {
-        LogManager.Log($"WM::{caller}", message);
     }
 }
 
+public record WindowRunTimeId
+{
+    private readonly int[] _runtimeId;
+    public WindowRunTimeId(int[] runtimeId)
+    {
+        _runtimeId = runtimeId;
+    }
+
+    public int[] RuntimeId => new List<int>(_runtimeId).ToArray();
+
+    public override string ToString()
+    {
+        return _runtimeId == null? null : $"[{string.Join(",", _runtimeId)}]";
+    }
+
+    public static implicit operator string(WindowRunTimeId windowRunTimeId) => windowRunTimeId.ToString();
+}

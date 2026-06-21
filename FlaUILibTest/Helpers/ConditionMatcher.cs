@@ -12,6 +12,8 @@ public static class ConditionMatcher
             AndCondition ac => ac.Conditions.All(c => Matches(element, c)),
             OrCondition oc => oc.Conditions.Any(c => Matches(element, c)),
             NotCondition nc => !Matches(element, nc.Condition),
+            TrueCondition _ => true,
+            FalseCondition _ => false,
             _ => false
         };
     }
