@@ -28,8 +28,8 @@ public class UIDriver : IDisposable
     public void LaunchApplication(ProcessStartInfo processStartInfo)
     {
         _application = Application.Launch(processStartInfo);
-        _rootWindow = _application.GetMainWindow(_automation);
         _desktop = _automation.GetDesktop();
+        _rootWindow = _application.GetMainWindow(_automation);
         _windowManager.CreateWindowFinder(_desktop, FinderTypes.Desktop);
         _windowManager.CreateWindowFinder(_rootWindow, FinderTypes.RootWindow);
     }
