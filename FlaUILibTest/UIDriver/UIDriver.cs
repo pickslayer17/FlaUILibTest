@@ -39,7 +39,7 @@ public class UIDriver : IDisposable
         var elementBy = new BY(elementCondition(CF));
         var windowBy = windowCondition != null ? new BY(windowCondition(CF)) : null;
 
-        var source = _windowManager.CreateSource(windowBy); // windowBy == null => root window
+        var source = _windowManager.CreateSource(windowBy);
         return new UILocator(source, elementBy);
     }
 

@@ -8,8 +8,9 @@ using FlaUILibTest;
 using FlaUILibTest.DcPushBenchMark;
 using FlaUILibTest.Inspector;
 using FlaUILibTest.UIDriver;
-using System.Diagnostics;
 using Interop.UIAutomationClient;
+using System.Diagnostics;
+using System.Xml.Linq;
 
 class Program
 {
@@ -29,6 +30,12 @@ class Program
         Console.WriteLine("works!");
         await elementFromDrvier.ClickAsync();
 
+        var okButtonInFormatCells = 
+            driver.UILocator(
+                cf => cf.ByControlType(ControlType.Button).And(cf.ByName("OK")),
+                cf => cf.ByControlType(ControlType.Window).And(cf.ByName("Format Cells"))
+                );
+        await okButtonInFormatCells.ClickAsync();
 
         //var test = new DcPushTest();
 
