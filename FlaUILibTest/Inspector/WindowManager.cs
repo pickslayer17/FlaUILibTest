@@ -16,7 +16,6 @@ public class WindowManager
     private readonly Lock _desktopLock = new();
     private readonly Lock _rootWindowLock = new ();
     private readonly Lock _searchLock = new();
-    private readonly Lock _windowEventLock = new();
     private readonly Lock _finderCreateLock = new();
 
     private int[] DesktopRuntimeId
@@ -102,7 +101,7 @@ public class WindowManager
         return finder;
     }
 
-    public void  CreateWindowFinder(AutomationElement window, FinderTypes finderType = FinderTypes.Window)
+    public void CreateWindowFinder(AutomationElement window, FinderTypes finderType = FinderTypes.Window)
     {
         var finder = new WindowFinder(window)
         {
@@ -144,17 +143,39 @@ public class WindowManager
 
     private void WindowOpened(FinderBase finder, AutomationElement eventElement, EventId eventId, int[] windowRunTimeId)
     {
-        lock (_windowEventLock)
+        lock (_finderCreateLock)
         {
-            LogManager.Log("window opened");
+            var key = windowRunTimeId.ToWindowRunTimeId();
+            if (WindowFinders.ContainsKey(key))
+            {
+                LogManager.Log($"window opened, finder already exists [{key}]");
+                return;
+            }
+
+            CreateWindowFinder(eventElement);
+            LogManager.Log($"window opened, finder created [{key}]");
         }
     }
 
     private void WindowClosed(FinderBase finder, AutomationElement eventElement, EventId eventId, int[] windowRunTimeId)
     {
-        lock (_windowEventLock)
+        lock (_finderCreateLock)
         {
-            LogManager.Log("window closed");
+            RemoveWindowFinder(windowRunTimeId);
+        }
+    }
+
+    private void RemoveWindowFinder(int[] windowRunTimeId)
+    {
+        var key = windowRunTimeId.ToWindowRunTimeId();
+        if (WindowFinders.TryRemove(key, out var finder))
+        {
+            finder.Dispose();
+            LogManager.Log($"window closed, finder removed [{key}]");
+        }
+        else
+        {
+            LogManager.Log($"window closed, no finder for [{key}]");
         }
     }
 

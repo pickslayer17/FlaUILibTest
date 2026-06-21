@@ -125,7 +125,7 @@ public abstract class FinderBase : IDisposable
             OnWindowOpened);
         WindowClosedEventHandler = Window.RegisterAutomationEvent(
             Window.Automation.EventLibrary.Window.WindowClosedEvent,
-            TreeScope.Subtree,
+            TreeScope.Element,
             OnWindowClosed);
     }
 
@@ -166,16 +166,7 @@ public abstract class FinderBase : IDisposable
     {
         var info = GetElementInfo(element);
         Log($"WINDOW_CLOSED | {info}");
-        TryResolveByMatch(element, info);
-        TryResolveByDescendant(element, info);
-        if (element.AsWindow().TryGetWindowRunTimeId(out int[] windowRunTimeId))
-        {
-            OnWindowClosedFunc?.Invoke(this, element, eventId, windowRunTimeId);
-        }
-        else
-        {
-            LogManager.LogError("Failed to get RuntimeId");
-        }
+        OnWindowClosedFunc?.Invoke(this, element, eventId, RootRuntimeId);
     }
 
     private void TryResolveByDescendant(AutomationElement element, string elementInfo)
