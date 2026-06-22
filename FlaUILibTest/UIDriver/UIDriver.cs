@@ -4,7 +4,6 @@ using FlaUI.Core.Conditions;
 using FlaUI.UIA3;
 using FlaUILibTest.Constants;
 using FlaUILibTest.Inspector;
-using System;
 using System.Diagnostics;
 
 namespace FlaUILibTest.UIDriver;
