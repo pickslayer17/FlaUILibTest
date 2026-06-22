@@ -6,11 +6,11 @@ namespace FlaUILibTest.Inspector;
 
 public class WindowElementSource : IElementSource
 {
-    private readonly WindowManager _manager;
+    private readonly FinderManager _manager;
     private readonly BY _windowBy;
-    private FinderBase _finder;
+    private IFinder _finder;
 
-    public WindowElementSource(WindowManager manager, BY windowBy)
+    public WindowElementSource(FinderManager manager, BY windowBy)
     {
         _manager = manager;
         _windowBy = windowBy;
@@ -25,7 +25,7 @@ public class WindowElementSource : IElementSource
     public Task<AutomationElement[]> FindAllAsync(BY elementBy)
         => throw new NotImplementedException("FindAll будет реализован позже");
 
-    private async Task<FinderBase> ResolveFinderAsync()
+    private async Task<IFinder> ResolveFinderAsync()
     {
         if (_finder != null)
             return _finder;

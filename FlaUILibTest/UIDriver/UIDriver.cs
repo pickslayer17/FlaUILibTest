@@ -12,7 +12,7 @@ public class UIDriver : IDisposable
 {
     private Application _application;
     private UIA3Automation _automation;
-    private WindowManager _windowManager;
+    private FinderManager _windowManager;
     private AutomationElement _desktop;
     private Window _rootWindow;
     private ConditionFactory CF;
@@ -21,7 +21,7 @@ public class UIDriver : IDisposable
     {
         _automation = new UIA3Automation();
         CF = _automation.ConditionFactory;
-        _windowManager = new WindowManager();
+        _windowManager = new FinderManager();
     }
 
     public void LaunchApplication(ProcessStartInfo processStartInfo)

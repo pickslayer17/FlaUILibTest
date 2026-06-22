@@ -12,12 +12,15 @@ using System.Collections.Concurrent;
 
 namespace FlaUILibTest.Inspector;
 
-public class WindowManager
+public class FinderManager
 {
     private readonly Lock _desktopLock = new();
     private readonly Lock _rootWindowLock = new ();
     private readonly Lock _searchLock = new();
     private readonly Lock _finderCreateLock = new();
+
+    // Единый координатор отложенного поиска — один на все finder'ы.
+    private readonly WatchCoordinator _coordinator = new();
 
     private int[] DesktopRuntimeId
     {
@@ -62,7 +65,7 @@ public class WindowManager
         }
     } = new();
 
-    public WindowManager()
+    public FinderManager()
     {
     }
 
@@ -76,9 +79,9 @@ public class WindowManager
             .Select(f => new FinderSnapshot(f.Name, (int[])(f.RootRuntimeId?.Clone() ?? Array.Empty<int>())))
             .ToList();
 
-    public FinderBase GetRootWindowFinder() => GetFinderByWindowId(RootWindowRuntimeId);
+    public IFinder GetRootWindowFinder() => GetFinderByWindowId(RootWindowRuntimeId);
 
-    public async Task<FinderBase> FindInDesktop(BY windowBy)
+    public async Task<IFinder> FindInDesktop(BY windowBy)
     {
         var desktopFinder = GetFinderByWindowId(DesktopRuntimeId);
         var window = await desktopFinder.RegisterAndGetElementAsync(windowBy);
@@ -112,7 +115,7 @@ public class WindowManager
 
     public void CreateWindowFinder(AutomationElement window, FinderTypes finderType = FinderTypes.Window)
     {
-        var finder = new WindowFinder(window)
+        var finder = new WindowFinder(window, _coordinator)
         {
             OnWindowOpenedFunc = WindowOpened,
             OnWindowClosedFunc = WindowClosed,
@@ -151,7 +154,7 @@ public class WindowManager
         WindowFinders.TryAdd(windowRunTimeId.ToWindowRunTimeId(), finder);
     }
 
-    private void WindowOpened(FinderBase finder, AutomationElement eventElement, EventId eventId, int[] windowRunTimeId)
+    private void WindowOpened(WindowFinder finder, AutomationElement eventElement, EventId eventId, int[] windowRunTimeId)
     {
         lock (_finderCreateLock)
         {
@@ -167,7 +170,7 @@ public class WindowManager
         }
     }
 
-    private void WindowClosed(FinderBase finder, AutomationElement eventElement, EventId eventId, int[] windowRunTimeId)
+    private void WindowClosed(WindowFinder finder, AutomationElement eventElement, EventId eventId, int[] windowRunTimeId)
     {
         lock (_finderCreateLock)
         {
