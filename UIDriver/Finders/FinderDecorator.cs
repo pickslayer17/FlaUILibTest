@@ -1,5 +1,3 @@
-using FlaUI.Core.AutomationElements;
-
 namespace UIDriver;
 
 public abstract class FinderDecorator : IFinder
@@ -8,6 +6,6 @@ public abstract class FinderDecorator : IFinder
 
     protected FinderDecorator(IFinder inner) => Inner = inner;
 
-    public abstract AutomationElement? Find(AutomationElement source);
-    public abstract AutomationElement[] FindAll(AutomationElement source);
+    public abstract AutomationElementObject? Find(AutomationElementObject source);
+    public abstract AutomationElementObject[] FindAll(AutomationElementObject source);
 }

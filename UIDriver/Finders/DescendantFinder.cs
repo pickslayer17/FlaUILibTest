@@ -9,7 +9,12 @@ public sealed class DescendantFinder : IFinder
 
     public DescendantFinder(ConditionBase element) => _element = element;
 
-    public AutomationElement? Find(AutomationElement source) => source.FindFirstDescendant(_element);
+    public AutomationElementObject? Find(AutomationElementObject source)
+    {
+        var found = source.Element.FindFirstDescendant(_element);
+        return found is null ? null : new AutomationElementObject(found);
+    }
 
-    public AutomationElement[] FindAll(AutomationElement source) => source.FindAllDescendants(_element);
+    public AutomationElementObject[] FindAll(AutomationElementObject source)
+        => source.Element.FindAllDescendants(_element).Select(e => new AutomationElementObject(e)).ToArray();
 }

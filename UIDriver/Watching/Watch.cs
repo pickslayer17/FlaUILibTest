@@ -1,30 +1,43 @@
-using FlaUI.Core.AutomationElements;
-
 namespace UIDriver;
 
 public enum WatchStatus
 {
     Pending,
     Completed,
-    TimedOut,
     Cancelled
 }
 
 public sealed class Watch
 {
-    public IFinder Finder { get; }
-    public AutomationElement Source { get; }
-    public TimeSpan Timeout { get; }
+    public Guid Id { get; } = Guid.NewGuid();
     public WatchStatus Status { get; private set; } = WatchStatus.Pending;
 
-    public Watch(IFinder finder, AutomationElement source, TimeSpan timeout)
+    private readonly IFinder _finder;
+    private readonly AutomationElementObject _source;
+    private readonly TaskCompletionSource<AutomationElementObject> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public Watch(IFinder finder, AutomationElementObject source)
     {
-        Finder = finder;
-        Source = source;
-        Timeout = timeout;
+        _finder = finder;
+        _source = source;
     }
 
-    public Task<AutomationElement> Task => throw new NotImplementedException();
+    public Task<AutomationElementObject> Task => _tcs.Task;
 
-    public bool TryResolve() => throw new NotImplementedException();
+    public bool TryResolve()
+    {
+        if (_tcs.Task.IsCompleted) return true;
+
+        var found = _finder.Find(_source);
+        if (found is null) return false;
+
+        Status = WatchStatus.Completed;
+        return _tcs.TrySetResult(found);
+    }
+
+    public void Cancel()
+    {
+        Status = WatchStatus.Cancelled;
+        _tcs.TrySetCanceled();
+    }
 }

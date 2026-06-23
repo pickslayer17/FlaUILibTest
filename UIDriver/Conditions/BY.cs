@@ -15,9 +15,7 @@ public sealed class BY
 
     public ConditionBase? Element { get; init; }
 
-    public ConditionBase? Parent { get; init; }
-
-    public ConditionBase? Window { get; init; }
+    public BY? Parent { get; init; }
 
     public TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(15);
 }

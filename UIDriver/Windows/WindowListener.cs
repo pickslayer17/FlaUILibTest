@@ -1,4 +1,7 @@
 using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Definitions;
+using FlaUI.Core.EventHandlers;
+using FlaUI.Core.Identifiers;
 
 namespace UIDriver;
 
@@ -7,16 +10,60 @@ public sealed class WindowListener : IDisposable
     private readonly AutomationElement _window;
     private readonly Watcher _watcher;
 
-    public WindowListener(AutomationElement window, Watcher watcher)
+    private ToggleWindowListener? _toggleWindowSubscriber;
+
+    private StructureChangedEventHandlerBase? _structure;
+    private PropertyChangedEventHandlerBase? _property;
+    private AutomationEventHandlerBase? _windowOpened;
+    private AutomationEventHandlerBase? _windowClosed;
+
+    public WindowListener(AutomationElementObject window, Watcher watcher)
     {
-        _window = window;
+        _window = window.Element;
         _watcher = watcher;
     }
 
-    public Action<AutomationElement>? OnWindowOpened { get; set; }
-    public Action<AutomationElement>? OnWindowClosed { get; set; }
+    public void RegisterOpenWindowEvent(ToggleWindowListener subscriber) => _toggleWindowSubscriber = subscriber;
 
-    public void Subscribe() => throw new NotImplementedException();
+    public void RegisterCloseWindowEvent(ToggleWindowListener subscriber) => _toggleWindowSubscriber = subscriber;
 
-    public void Dispose() => throw new NotImplementedException();
+    public void StartListening()
+    {
+        _structure = _window.RegisterStructureChangedEvent(TreeScope.Subtree, OnStructureChanged);
+        _property = _window.RegisterPropertyChangedEvent(TreeScope.Subtree, OnPropertyChanged, PropertiesToWatch());
+        _windowOpened = _window.RegisterAutomationEvent(
+            _window.Automation.EventLibrary.Window.WindowOpenedEvent, TreeScope.Subtree, OnWindowOpened);
+        _windowClosed = _window.RegisterAutomationEvent(
+            _window.Automation.EventLibrary.Window.WindowClosedEvent, TreeScope.Element, OnWindowClosed);
+    }
+
+    private void OnStructureChanged(AutomationElement element, StructureChangeType changeType, int[] runtimeId)
+    {
+        _watcher.Poke();
+    }
+
+    private void OnPropertyChanged(AutomationElement element, PropertyId propertyId, object newValue)
+    {
+        _watcher.Poke();
+    }
+
+    private void OnWindowOpened(AutomationElement element, EventId eventId)
+    {
+        _toggleWindowSubscriber?.NotifyOnOpened(new AutomationElementObject(element));
+    }
+
+    private void OnWindowClosed(AutomationElement element, EventId eventId)
+    {
+        _toggleWindowSubscriber?.NotifyOnClosed(new AutomationElementObject(element));
+    }
+
+    private static PropertyId[] PropertiesToWatch()
+        => UiaPropertyHelper.AllProperties
+            .Except([UiaPropertyHelper.GetPropertyId(UiaProperty.BoundingRectangle)])
+            .ToArray();
+
+    public void Dispose()
+    {
+        // отписка от UIA-событий — добавится после сверки точного unregister-API FlaUI
+    }
 }

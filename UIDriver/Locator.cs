@@ -1,17 +1,15 @@
-using FlaUI.Core.AutomationElements;
-
 namespace UIDriver;
 
 public sealed class Locator
 {
     private readonly BY _by;
-    private readonly ApplicationManager _app;
+    private readonly ApplicationManager _applicationManager;
 
-    public Locator(BY by, ApplicationManager app)
+    internal Locator(BY by, ApplicationManager applicationManager)
     {
         _by = by;
-        _app = app;
+        _applicationManager = applicationManager;
     }
 
-    public Task<AutomationElement> GetElementAsync() => _app.Submit(_by);
+    public Task<AutomationElementObject> GetElementAsync() => _applicationManager.Request(_by);
 }

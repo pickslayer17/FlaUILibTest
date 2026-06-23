@@ -1,11 +1,24 @@
-using FlaUI.Core.AutomationElements;
-
 namespace UIDriver;
 
-public sealed class WindowContainer
+public sealed class WindowContainer : IDisposable
 {
-    public required AutomationElement Window { get; init; }
-    public required WindowManager Manager { get; init; }
-    public required WindowListener Listener { get; init; }
-    public required Watcher Watcher { get; init; }
+    private readonly Watcher _watcher;
+    private readonly WindowManager _windowManager;
+    private readonly WindowListener _windowListener;
+
+    public WindowContainer(AutomationElementObject window)
+    {
+        _watcher = new Watcher();
+        _windowManager = new WindowManager(window, _watcher);
+        _windowListener = new WindowListener(window, _watcher);
+        _windowListener.StartListening();
+    }
+
+    public Task<AutomationElementObject> Accept(Order order) => _windowManager.Accept(order);
+
+    public void RegisterOpenWindowEvent(ToggleWindowListener subscriber) => _windowListener.RegisterOpenWindowEvent(subscriber);
+
+    public void RegisterCloseWindowEvent(ToggleWindowListener subscriber) => _windowListener.RegisterCloseWindowEvent(subscriber);
+
+    public void Dispose() => _windowListener.Dispose();
 }

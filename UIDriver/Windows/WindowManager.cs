@@ -1,21 +1,23 @@
 using System.Collections.Concurrent;
-using FlaUI.Core.AutomationElements;
 
 namespace UIDriver;
 
 public sealed class WindowManager
 {
-    private readonly AutomationElement _window;
+    private readonly AutomationElementObject _window;
     private readonly Watcher _watcher;
-    private readonly FinderFabric _fabric;
     private readonly ConcurrentDictionary<Guid, Order> _orders = new();
 
-    public WindowManager(AutomationElement window, Watcher watcher, FinderFabric fabric)
+    public WindowManager(AutomationElementObject window, Watcher watcher)
     {
         _window = window;
         _watcher = watcher;
-        _fabric = fabric;
     }
 
-    public Task<AutomationElement> Handle(BY by) => throw new NotImplementedException();
+    public Task<AutomationElementObject> Accept(Order order)
+    {
+        _orders.TryAdd(Guid.NewGuid(), order);
+        var finder = FinderFabric.GetFinder(order.By);
+        return _watcher.AddWatch(order, finder, _window);
+    }
 }
