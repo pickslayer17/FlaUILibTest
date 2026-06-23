@@ -3,7 +3,6 @@ using FlaUI.Core.Conditions;
 
 namespace UIDriver;
 
-// Базовая стратегия: элемент-потомок source по условию.
 public sealed class DescendantFinder : IFinder
 {
     private readonly ConditionBase _element;

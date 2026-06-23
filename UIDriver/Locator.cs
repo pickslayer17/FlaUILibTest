@@ -2,8 +2,6 @@ using FlaUI.Core.AutomationElements;
 
 namespace UIDriver;
 
-// Ленивый пользовательский хэндл. Несёт BY (собранный из условий пользователя) и при GetElementAsync
-// сдаёт его AppManager'у. Что на том конце — не знает, просто связной.
 public sealed class Locator
 {
     private readonly BY _by;
