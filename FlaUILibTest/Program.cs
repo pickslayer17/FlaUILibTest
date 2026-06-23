@@ -26,7 +26,7 @@ class Program
 
         MonitorApp.Start(); 
 
-        var driver = new UIDriver();
+        var driver = new FlaUILibTest.UIDriver.UIDriver();
         driver.LaunchApplication(processStartInfo);
 
         var elementFromDrvier = driver.UILocator(cf => cf.ByControlType(ControlType.DataItem).And(cf.ByName("A1")));

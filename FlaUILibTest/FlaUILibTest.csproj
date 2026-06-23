@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FlaUIMonitor\FlaUIMonitor.csproj" />
+    <ProjectReference Include="..\UIDriver\UIDriver.csproj" />
   </ItemGroup>
 
 </Project>
