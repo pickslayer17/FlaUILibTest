@@ -1,3 +1,5 @@
+using FlaUI.Core.AutomationElements;
+
 namespace UIDriver;
 
 public sealed class Locator
@@ -11,5 +13,11 @@ public sealed class Locator
         _applicationManager = applicationManager;
     }
 
-    public Task<AutomationElementObject> GetElementAsync() => _applicationManager.Request(_by);
+
+    these changes are nice, all other we can rollback, juct commented for your attention
+    public async Task ClickAsync() => await WithElement(el => el.Element.Click());
+
+    private async Task<T> WithElement<T>(Func<AutomationElementObject, T> action) => action(await GetElementAsync());
+    private async Task WithElement(Action<AutomationElementObject> action) => action(await GetElementAsync());
+    private async Task<AutomationElementObject> GetElementAsync() => await _applicationManager.RequestElementAsync(_by);
 }

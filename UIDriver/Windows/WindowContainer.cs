@@ -13,8 +13,8 @@ public sealed class WindowContainer : IDisposable
         _windowListener = new WindowListener(window, _watcher);
         _windowListener.StartListening();
     }
-
-    public Task<AutomationElementObject> Accept(Order order) => _windowManager.Accept(order);
+    why not asyc?
+    public async Task<AutomationElementObject> ServerOrderAsync(Order order) => await _windowManager.ServeOrderAsync(order);
 
     public void RegisterOpenWindowEvent(ToggleWindowListener subscriber) => _windowListener.RegisterOpenWindowEvent(subscriber);
 

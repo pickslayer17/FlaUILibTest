@@ -17,7 +17,7 @@ public sealed class ApplicationManager
 
     public void RegisterDesktop(AutomationElementObject window) => _desktopContainer = CreateWindowContainer(window);
 
-    public async Task<AutomationElementObject> Request(BY by)
+    public async Task<AutomationElementObject> RequestElementAsync(BY by)
     {
         var container = by.Scope switch
         {
@@ -27,8 +27,8 @@ public sealed class ApplicationManager
 
         var order = new Order { By = by };
         _orders.TryAdd(Guid.NewGuid(), order);
-        order.Task = container.Accept(order);
-        return await order.Task;
+        why not async?
+        return await container.ServerOrderAsync(order);
     }
 
     public WindowContainer CreateWindowContainer(AutomationElementObject window)
