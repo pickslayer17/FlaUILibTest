@@ -16,8 +16,8 @@ public sealed class WindowManager
 
     public Task<AutomationElementObject> ProcessOrderAsync(Order order)
     {
-        _orders.TryAdd(Guid.NewGuid(), order);
-        var finder = FinderFabric.GetFinder(order.By);
+        _orders.TryAdd(order.Id, order);
+        var finder = FinderFactory.GetFinder(order.By);
         return _watcher.ExecuteOrderAsync(order, finder, _window);
     }
 }

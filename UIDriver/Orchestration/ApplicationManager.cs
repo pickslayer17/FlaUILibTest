@@ -36,7 +36,8 @@ public sealed class ApplicationManager
     private Order RegisterOrder(BY by)
     {
         var order = new Order { By = by };
-        _orders.TryAdd(Guid.NewGuid(), order);
+        _orders.TryAdd(order.Id, order);
+        LogEventFactory.RaiseOrderCreated(order.Id, by);
         return order;
     }
 

@@ -11,6 +11,7 @@ public sealed class Watcher
         var watch = CreateWatch(finder, source);
         var result = await AwaitWatchAsync(watch, order.By.Timeout);
         CompleteWatch(watch, order);
+        LogEventFactory.RaiseElementResolved(order.Id);
 
         return result;
     }

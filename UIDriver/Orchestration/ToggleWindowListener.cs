@@ -6,7 +6,15 @@ public sealed class ToggleWindowListener
 
     public ToggleWindowListener(ApplicationManager applicationManager) => _applicationManager = applicationManager;
 
-    public void NotifyOnOpened(AutomationElementObject window) => _applicationManager.CreateWindowContainer(window);
+    public void NotifyOnOpened(AutomationElementObject window)
+    {
+        LogEventFactory.RaiseWindowOpened(window.RunTimeId);
+        _applicationManager.CreateWindowContainer(window);
+    }
 
-    public void NotifyOnClosed(AutomationElementObject window) => _applicationManager.RemoveWindowContainer(window.RunTimeId);
+    public void NotifyOnClosed(AutomationElementObject window)
+    {
+        LogEventFactory.RaiseWindowClosed(window.RunTimeId);
+        _applicationManager.RemoveWindowContainer(window.RunTimeId);
+    }
 }
