@@ -13,11 +13,9 @@ public sealed class Locator
         _applicationManager = applicationManager;
     }
 
-
-    these changes are nice, all other we can rollback, juct commented for your attention
-    public async Task ClickAsync() => await WithElement(el => el.Element.Click());
+    public Task ClickAsync() => WithElement(el => el.Element.Click());
 
     private async Task<T> WithElement<T>(Func<AutomationElementObject, T> action) => action(await GetElementAsync());
     private async Task WithElement(Action<AutomationElementObject> action) => action(await GetElementAsync());
-    private async Task<AutomationElementObject> GetElementAsync() => await _applicationManager.RequestElementAsync(_by);
+    private Task<AutomationElementObject> GetElementAsync() => _applicationManager.RequestElementAsync(_by);
 }

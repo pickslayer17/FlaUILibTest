@@ -17,18 +17,27 @@ public sealed class ApplicationManager
 
     public void RegisterDesktop(AutomationElementObject window) => _desktopContainer = CreateWindowContainer(window);
 
-    public async Task<AutomationElementObject> RequestElementAsync(BY by)
+    public Task<AutomationElementObject> RequestElementAsync(BY by)
     {
-        var container = by.Scope switch
-        {
-            WindowScope.Default => _defaultContainer!,
-            _ => throw new NotImplementedException()
-        };
+        var container = ResolveContainer(by);
+        var order = RegisterOrder(by);
 
+        var task = container.SubmitOrderAsync(order);
+        order.Task = task;
+        return task;
+    }
+
+    private WindowContainer ResolveContainer(BY by) => by.Scope switch
+    {
+        WindowScope.Default => _defaultContainer!,
+        _ => throw new NotImplementedException()
+    };
+
+    private Order RegisterOrder(BY by)
+    {
         var order = new Order { By = by };
         _orders.TryAdd(Guid.NewGuid(), order);
-        why not async?
-        return await container.ServerOrderAsync(order);
+        return order;
     }
 
     public WindowContainer CreateWindowContainer(AutomationElementObject window)

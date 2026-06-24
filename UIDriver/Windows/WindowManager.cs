@@ -14,11 +14,10 @@ public sealed class WindowManager
         _watcher = watcher;
     }
 
-    public async Task<AutomationElementObject> ServeOrderAsync(Order order)
+    public Task<AutomationElementObject> ProcessOrderAsync(Order order)
     {
         _orders.TryAdd(Guid.NewGuid(), order);
         var finder = FinderFabric.GetFinder(order.By);
-        why not async?
-        return await _watcher.ProcessOrder(order, finder, _window);
+        return _watcher.ExecuteOrderAsync(order, finder, _window);
     }
 }
