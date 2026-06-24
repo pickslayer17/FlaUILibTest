@@ -1,7 +1,22 @@
-﻿class Program
+﻿using FlaUI.Core.Definitions;
+using FlaUILibTest.UIDriver;
+using System.Diagnostics;
+
+class Program
 {
     static async Task Main()
     {
+        var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
+        {
+            WindowStyle = ProcessWindowStyle.Normal
+        };
+        processStartInfo.EnvironmentVariables["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = "--remote-debugging-port=9234";
+        processStartInfo.UseShellExecute = false;
+        var driver = new UIDriver.Driver();
+        driver.Launch(processStartInfo);
+        var elementFromDrvier = driver.Locator(cf => cf.ByControlType(ControlType.DataItem).And(cf.ByName("A1")));
+        await elementFromDrvier.ClickAsync();
+        Console.WriteLine("works!");
 
         Console.ReadLine();
     }
