@@ -39,6 +39,7 @@ public sealed class WindowListener : IDisposable
 
     private void OnStructureChanged(AutomationElement element, StructureChangeType changeType, int[] runtimeId)
     {
+        LogEventFactory.RaiseText($"Structure ");
         _watcher.PokeOnStructureChanged(new AutomationElementObject(element));
     }
 

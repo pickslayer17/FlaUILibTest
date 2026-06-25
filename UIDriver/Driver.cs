@@ -19,7 +19,15 @@ public sealed class Driver : IDisposable
     }
 
     public Locator Locator(Func<ConditionFactory, ConditionBase> element)
-        => new(new BY { SelfCondition = element(_automation.ConditionFactory) }, _applicationManager);
+    {
+        var by = new BY { SelfCondition = element(_automation.ConditionFactory) };
+        var locator = new Locator(by, _applicationManager);
 
-    public void Dispose() => _automation.Dispose();
+        return locator;
+    }
+
+    public void Dispose()
+    {
+        _automation.Dispose();
+    }
 }

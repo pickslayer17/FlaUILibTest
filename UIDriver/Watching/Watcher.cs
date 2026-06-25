@@ -25,15 +25,23 @@ public sealed class Watcher
     public void PokeOnStructureChanged(AutomationElementObject source)
     {
         foreach (var (id, watch) in _watches)
+        {
             if (watch.TryResolveMatch(source) || watch.TryResolveFindDescendant(source))
+            {
                 _watches.TryRemove(id, out _);
+            }
+        }
     }
 
     public void PokeOnPropertyChanged(AutomationElementObject source)
     {
         foreach (var (id, watch) in _watches)
+        {
             if (watch.TryResolveMatch(source))
+            {
                 _watches.TryRemove(id, out _);
+            }
+        }
     }
 
     private Watch CreateWatch(IFinder finder)

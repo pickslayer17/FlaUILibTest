@@ -37,7 +37,7 @@ public sealed class ApplicationManager
     {
         var order = new Order { By = by };
         _orders.TryAdd(order.Id, order);
-        LogEventFactory.RaiseOrderCreated(order.Id, by);
+        
         return order;
     }
 
@@ -47,6 +47,7 @@ public sealed class ApplicationManager
         container.RegisterOpenWindowEvent(_toggleWindowListener);
         container.RegisterCloseWindowEvent(_toggleWindowListener);
         _containers.TryAdd(window.RunTimeId, container);
+        LogEventFactory.RaiseWindowEventBase(window.RunTimeId);
         return container;
     }
 
@@ -54,5 +55,6 @@ public sealed class ApplicationManager
     {
         if (_containers.TryRemove(id, out var container))
             container.Dispose();
+        LogEventFactory.RaiseText("Window container removed: " + id);
     }
 }

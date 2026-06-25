@@ -1,6 +1,6 @@
 ﻿using FlaUI.Core.Definitions;
-using FlaUILibTest.UIDriver;
 using System.Diagnostics;
+using UIDriver;
 
 class Program
 {
@@ -13,8 +13,9 @@ class Program
         processStartInfo.EnvironmentVariables["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = "--remote-debugging-port=9234";
         processStartInfo.UseShellExecute = false;
         var driver = new UIDriver.Driver();
+        LogEventHandler.Subscribe(new ConsoleLogger());
         driver.Launch(processStartInfo);
-        var elementFromDrvier = driver.Locator(cf => cf.ByControlType(ControlType.DataItem).And(cf.ByName("A1")));
+        var elementFromDrvier = driver.Locator(cf => cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")));
         await elementFromDrvier.ClickAsync();
         Console.WriteLine("works!");
 
