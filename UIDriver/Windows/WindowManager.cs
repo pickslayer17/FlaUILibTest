@@ -18,6 +18,6 @@ public sealed class WindowManager
     {
         _orders.TryAdd(order.Id, order);
         var finder = FinderFactory.GetFinder(order.By);
-        return _watcher.ExecuteOrderAsync(order, finder, _window);
+        return _watcher.ExecuteOrderAsync(order, finder);
     }
 }

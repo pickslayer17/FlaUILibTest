@@ -2,5 +2,5 @@ namespace UIDriver;
 
 public static class FinderFactory
 {
-    public static IFinder GetFinder(BY by) => new DescendantFinder(by.Element!);
+    public static IFinder GetFinder(BY by) => new DescendantFinder(by);
 }

@@ -13,26 +13,37 @@ public sealed class Watch
     public WatchStatus Status { get; private set; } = WatchStatus.Pending;
 
     private readonly IFinder _finder;
-    private readonly AutomationElementObject _source;
     private readonly TaskCompletionSource<AutomationElementObject> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    public Watch(IFinder finder, AutomationElementObject source)
+    public Watch(IFinder finder)
     {
         _finder = finder;
-        _source = source;
     }
 
     public Task<AutomationElementObject> Task => _tcs.Task;
 
-    public bool TryResolve()
+    public bool TryResolveFindDescendant(AutomationElementObject source)
     {
         if (_tcs.Task.IsCompleted) return true;
 
-        var found = _finder.Find(_source);
+        var found = _finder.Find(source);
         if (found is null) return false;
 
+        return Complete(found);
+    }
+
+    public bool TryResolveMatch(AutomationElementObject source)
+    {
+        if (_tcs.Task.IsCompleted) return true;
+        if (!_finder.Matches(source)) return false;
+
+        return Complete(source);
+    }
+
+    private bool Complete(AutomationElementObject result)
+    {
         Status = WatchStatus.Completed;
-        return _tcs.TrySetResult(found);
+        return _tcs.TrySetResult(result);
     }
 
     public void Cancel()

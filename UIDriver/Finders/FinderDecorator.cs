@@ -8,4 +8,5 @@ public abstract class FinderDecorator : IFinder
 
     public abstract AutomationElementObject? Find(AutomationElementObject source);
     public abstract AutomationElementObject[] FindAll(AutomationElementObject source);
+    public abstract bool Matches(AutomationElementObject source);
 }

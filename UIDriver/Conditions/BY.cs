@@ -13,7 +13,7 @@ public sealed class BY
 {
     public WindowScope Scope { get; init; } = WindowScope.Default;
 
-    public ConditionBase? Element { get; init; }
+    public ConditionBase? SelfCondition { get; init; }
 
     public BY? Parent { get; init; }
 

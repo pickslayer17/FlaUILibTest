@@ -5,35 +5,48 @@ namespace UIDriver;
 public sealed class Watcher
 {
     private readonly ConcurrentDictionary<Guid, Watch> _watches = new();
+    private readonly AutomationElementObject _windowSource;
 
-    public async Task<AutomationElementObject> ExecuteOrderAsync(Order order, IFinder finder, AutomationElementObject source)
+    public Watcher(AutomationElementObject windowSource)
     {
-        var watch = CreateWatch(finder, source);
-        var result = await AwaitWatchAsync(watch, order.By.Timeout);
+        _windowSource = windowSource;
+    }
+
+    public async Task<AutomationElementObject> ExecuteOrderAsync(Order order, IFinder finder)
+    {
+        var watch = CreateWatch(finder);
+        var result = await WaitWatchAsync(watch, order.By.Timeout);
         CompleteWatch(watch, order);
         LogEventFactory.RaiseElementResolved(order.Id);
 
         return result;
     }
 
-    public void Poke()
+    public void PokeOnStructureChanged(AutomationElementObject source)
     {
         foreach (var (id, watch) in _watches)
-            if (watch.TryResolve())
+            if (watch.TryResolveMatch(source) || watch.TryResolveFindDescendant(source))
                 _watches.TryRemove(id, out _);
     }
 
-    private Watch CreateWatch(IFinder finder, AutomationElementObject source)
+    public void PokeOnPropertyChanged(AutomationElementObject source)
     {
-        var watch = new Watch(finder, source);
+        foreach (var (id, watch) in _watches)
+            if (watch.TryResolveMatch(source))
+                _watches.TryRemove(id, out _);
+    }
+
+    private Watch CreateWatch(IFinder finder)
+    {
+        var watch = new Watch(finder);
         _watches.TryAdd(watch.Id, watch);
 
         return watch;
     }
 
-    private static async Task<AutomationElementObject> AwaitWatchAsync(Watch watch, TimeSpan timeout)
+    private async Task<AutomationElementObject> WaitWatchAsync(Watch watch, TimeSpan timeout)
     {
-        if (!watch.TryResolve())
+        if (!watch.TryResolveFindDescendant(_windowSource))
             await watch.Task.WaitAsync(timeout);
 
         return await watch.Task;

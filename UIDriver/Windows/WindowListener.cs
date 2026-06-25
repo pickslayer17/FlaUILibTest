@@ -39,12 +39,12 @@ public sealed class WindowListener : IDisposable
 
     private void OnStructureChanged(AutomationElement element, StructureChangeType changeType, int[] runtimeId)
     {
-        _watcher.Poke();
+        _watcher.PokeOnStructureChanged(new AutomationElementObject(element));
     }
 
     private void OnPropertyChanged(AutomationElement element, PropertyId propertyId, object newValue)
     {
-        _watcher.Poke();
+        _watcher.PokeOnPropertyChanged(new AutomationElementObject(element));
     }
 
     private void OnWindowOpened(AutomationElement element, EventId eventId)

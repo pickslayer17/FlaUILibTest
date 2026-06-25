@@ -8,7 +8,7 @@ public sealed class WindowContainer : IDisposable
 
     public WindowContainer(AutomationElementObject window)
     {
-        _watcher = new Watcher();
+        _watcher = new Watcher(window);
         _windowManager = new WindowManager(window, _watcher);
         _windowListener = new WindowListener(window, _watcher);
         _windowListener.StartListening();
