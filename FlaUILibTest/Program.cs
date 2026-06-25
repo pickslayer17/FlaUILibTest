@@ -6,21 +6,21 @@ class Program
 {
     static async Task Main()
     {
-        //var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
-        //{
-        //    WindowStyle = ProcessWindowStyle.Normal
-        //};
-        //processStartInfo.EnvironmentVariables["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = "--remote-debugging-port=9234";
-        //processStartInfo.UseShellExecute = false;
-        //var driver = new UIDriver.Driver();
-        //LogEventHandler.Subscribe(new ConsoleLogger());
-        //driver.Launch(processStartInfo);
-        //var elementFromDrvier = driver.Locator(cf => cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")));
-        //await elementFromDrvier.ClickAsync();
-        //Console.WriteLine("works!");
+        var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
+        {
+            WindowStyle = ProcessWindowStyle.Normal
+        };
+        processStartInfo.EnvironmentVariables["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = "--remote-debugging-port=9234";
+        processStartInfo.UseShellExecute = false;
+        var driver = new UIDriver.Driver();
+        LogEventHandler.Subscribe(new ConsoleLogger());
+        driver.Launch(processStartInfo);
+        var elementFromDrvier = driver.Locator(cf => cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")));
+        await elementFromDrvier.ClickAsync();
+        Console.WriteLine("works!");
 
-        //Console.ReadLine();
-       await OleEngineTest();
+        Console.ReadLine();
+        //await OleEngineTest();
     }
 
     public async static Task OleEngineTest()
