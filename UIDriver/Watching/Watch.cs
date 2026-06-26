@@ -29,7 +29,6 @@ public sealed class Watch
     {
         LogEventFactory.RaiseText($"Trying to resolve Descendants with runtimeId: {source.RunTimeId}");
         if (_tcs.Task.IsCompleted) return true;
-        if (_finder.Matches(source)) Complete(source);
 
         var found = _finder.Find(source);
         if (found is null) return false;
@@ -41,9 +40,9 @@ public sealed class Watch
     {
         LogEventFactory.RaiseText($"Trying to resolve match for element with runtimeId: {source.RunTimeId}");
         if (_tcs.Task.IsCompleted) return true;
-        if (_finder.Matches(source)) Complete(source);
+        if (!_finder.Matches(source)) return false;
 
-        return false;
+        return Complete(source);
     }
 
     private bool Complete(AutomationElementObject foundElement)
