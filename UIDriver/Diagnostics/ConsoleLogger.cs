@@ -6,11 +6,20 @@ public sealed class ConsoleLogger : ILogEventSubscriber
     {
         switch (logEvent)
         {
-            case OrderCreated e: Console.WriteLine($"[{e.OrderId:N}] order created: {e.By.Scope}"); break;
-            case ElementResolved e: Console.WriteLine($"[{e.OrderId:N}] element resolved"); break;
-            case WindowOpened e: Console.WriteLine($"window opened: {e.Window}"); break;
-            case WindowClosed e: Console.WriteLine($"window closed: {e.Window}"); break;
-            case TextEvent e: Console.WriteLine($"text: {e.text}"); break;
+            case OrderCreated e: ToConsole($"[{e.OrderId:N}] order created: {e.By.Scope}"); break;
+            case ElementResolved e: ToConsole($"[{e.OrderId:N}] element resolved"); break;
+            case WindowOpened e: ToConsole($"window opened: {e.Window}"); break;
+            case WindowClosed e: ToConsole($"window closed: {e.Window}"); break;
+            case TextEvent e: ToConsole($"text: {e.text}"); break;
+        }
+    }
+
+    private Lock _consoleLoc = new Lock();
+    public void ToConsole(string log)
+    {
+        lock (_consoleLoc)
+        {
+            Console.WriteLine(log);
         }
     }
 }

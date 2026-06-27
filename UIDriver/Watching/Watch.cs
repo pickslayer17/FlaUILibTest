@@ -15,7 +15,8 @@ public sealed class Watch
     public Guid Id { get; } = Guid.NewGuid();
     public WatchStatus Status { get; private set; } = WatchStatus.Pending;
 
-    private Lock _resolveLocker = new();
+    private Lock _findLock = new();
+    private Lock _matchLock = new();
     private readonly IFinder _finder;
     private readonly IMatcher _matcher;
     private readonly TaskCompletionSource<AutomationElementObject> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -33,19 +34,26 @@ public sealed class Watch
         LogEventFactory.RaiseText($"Trying to resolve Descendants with runtimeId: {source.RunTimeId}");
         if (_tcs.Task.IsCompleted) return true;
 
-        var found = _finder.Find(source);
-        if (found is null) return false;
+        lock (_findLock)
+        {
+            var found = _finder.Find(source);
+            if (found is null) return false;
 
-        return Complete(found);
+            return Complete(found);
+        }
     }
 
     public bool TryResolveMatch(AutomationElementObject source)
     {
-        LogEventFactory.RaiseText($"Trying to resolve match for element with runtimeId: {source.RunTimeId}");
         if (_tcs.Task.IsCompleted) return true;
-        if (_matcher.Matches(source)) Complete(source);
 
-        return false;
+        lock (_findLock)
+        {
+            LogEventFactory.RaiseText($"Trying to resolve match for element with runtimeId: {source.RunTimeId}");
+            if (_matcher.Matches(source)) Complete(source);
+
+            return false;
+        }
     }
 
     private bool Complete(AutomationElementObject foundElement)

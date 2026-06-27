@@ -35,6 +35,10 @@ public sealed class WindowListener : IDisposable
 
     private void OnStructureChanged(AutomationElement element, StructureChangeType changeType, int[] runtimeId)
     {
+        if (changeType == StructureChangeType.ChildRemoved)
+            return;
+
+        LogEventFactory.RaiseText($"STRUCT cnahged {changeType.ToString()} - [{new RunTimeId(runtimeId)}]");
         _watcher.PokeOnStructureChanged(new AutomationElementObject(element));
     }
 
@@ -45,6 +49,9 @@ public sealed class WindowListener : IDisposable
 
     private void OnWindowOpened(AutomationElement element, EventId eventId)
     {
+        if(element.Properties.ProcessId.TryGetValue(out var processId) || processId != 0)
+            LogEventFactory.RaiseText($"window opened with process id[{processId}]");
+
         _toggleWindowSubscriber?.NotifyOnOpened(new AutomationElementObject(element), eventId);
     }
 

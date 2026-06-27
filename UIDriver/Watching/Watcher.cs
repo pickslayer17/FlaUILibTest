@@ -27,7 +27,7 @@ public sealed class Watcher
     {
         foreach (var (id, watch) in _watches)
         {
-            if (watch.TryResolveFindDescendant(source)) //  why TryResolveMatch tak silno i jestko tormozit poisk
+            if (watch.TryResolveFindDescendant(source))
             {
                 _watches.TryRemove(id, out _);
             }

@@ -1,5 +1,6 @@
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Tools;
+using System.Xml.Linq;
 using UIDriver.Constants;
 
 namespace UIDriver;
@@ -23,9 +24,13 @@ public sealed class RunTimeId
     }
     private int[] Id { get; init; }
 
+    public RunTimeId(int[] id)
+    {
+        Id = id ?? [RunTimeIdStates.Null.ToInt()];
+    }
+
     public RunTimeId(AutomationElement element)
     {
-
         int[] runtimeId = [RunTimeIdStates.ErrorTryingGet.ToInt()];
         try
         {
