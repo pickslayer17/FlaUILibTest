@@ -9,6 +9,10 @@ public sealed class SelfFinder : IFinder
 
     public AutomationElementObject? Find(AutomationElementObject source)
     {
+        //Driver._automation. TreeWalkerFactory.GetControlViewWalker().Get
+        // We will use TreeWalker for all searcg needs, check selfcondition with Mather.
+
+
         var found = source.Element.FindFirstDescendant(_elementBy.SelfCondition!);
         return found is null ? null : new AutomationElementObject(found);
     }

@@ -3,7 +3,6 @@ namespace UIDriver.Finders;
 public abstract class FinderDecoratorBase : IFinder
 {
     protected readonly IFinder Inner;
-    protected readonly BY innerBy;
 
     protected FinderDecoratorBase(IFinder inner)
     {
@@ -12,5 +11,4 @@ public abstract class FinderDecoratorBase : IFinder
 
     public abstract AutomationElementObject? Find(AutomationElementObject source);
     public abstract AutomationElementObject[] FindAll(AutomationElementObject source);
-    public abstract bool Matches(AutomationElementObject source);
 }

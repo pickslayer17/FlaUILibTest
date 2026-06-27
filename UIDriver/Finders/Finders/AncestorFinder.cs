@@ -1,4 +1,6 @@
-﻿namespace UIDriver.Finders.Finders;
+﻿using System.CodeDom;
+
+namespace UIDriver.Finders.Finders;
 
 public class AncestorFinder : FinderDecoratorBase
 {
@@ -12,11 +14,6 @@ public class AncestorFinder : FinderDecoratorBase
     }
 
     public override AutomationElementObject[] FindAll(AutomationElementObject source)
-    {
-        throw new NotImplementedException();
-    }
-
-    public override bool Matches(AutomationElementObject source)
     {
         throw new NotImplementedException();
     }
