@@ -1,4 +1,5 @@
 using System.Windows.Forms;
+using UIDriver.Matchers;
 
 namespace UIDriver;
 
@@ -16,11 +17,13 @@ public sealed class Watch
 
     private Lock _resolveLocker = new();
     private readonly IFinder _finder;
+    private readonly IMatcher _matcher;
     private readonly TaskCompletionSource<AutomationElementObject> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    public Watch(IFinder finder)
+    public Watch(IFinder finder, IMatcher matcher)
     {
         _finder = finder;
+        _matcher = matcher;
     }
 
     public Task<AutomationElementObject> Task => _tcs.Task;
@@ -40,9 +43,9 @@ public sealed class Watch
     {
         LogEventFactory.RaiseText($"Trying to resolve match for element with runtimeId: {source.RunTimeId}");
         if (_tcs.Task.IsCompleted) return true;
-        if (!_finder.Matches(source)) return false;
+        if (_matcher.Matches(source)) Complete(source);
 
-        return Complete(source);
+        return false;
     }
 
     private bool Complete(AutomationElementObject foundElement)

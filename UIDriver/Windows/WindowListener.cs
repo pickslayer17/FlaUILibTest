@@ -1,3 +1,4 @@
+using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.EventHandlers;
@@ -9,18 +10,15 @@ public sealed class WindowListener : IDisposable
 {
     private readonly AutomationElement _window;
     private readonly Watcher _watcher;
+    private readonly IEventLibrary _eventLibrary;
 
     private ToggleWindowListener? _toggleWindowSubscriber;
 
-    private StructureChangedEventHandlerBase? _structure;
-    private PropertyChangedEventHandlerBase? _property;
-    private AutomationEventHandlerBase? _windowOpened;
-    private AutomationEventHandlerBase? _windowClosed;
-
-    public WindowListener(AutomationElementObject window, Watcher watcher)
+    public WindowListener(AutomationElementObject window, Watcher watcher, IEventLibrary eventLibrary)
     {
         _window = window.Element;
         _watcher = watcher;
+        _eventLibrary = eventLibrary;
     }
 
     public void RegisterOpenWindowEvent(ToggleWindowListener subscriber) => _toggleWindowSubscriber = subscriber;
@@ -29,17 +27,14 @@ public sealed class WindowListener : IDisposable
 
     public void StartListening()
     {
-        _structure = _window.RegisterStructureChangedEvent(TreeScope.Subtree, OnStructureChanged);
-        _property = _window.RegisterPropertyChangedEvent(TreeScope.Subtree, OnPropertyChanged, PropertiesToWatch());
-        _windowOpened = _window.RegisterAutomationEvent(
-            _window.Automation.EventLibrary.Window.WindowOpenedEvent, TreeScope.Subtree, OnWindowOpened);
-        _windowClosed = _window.RegisterAutomationEvent(
-            _window.Automation.EventLibrary.Window.WindowClosedEvent, TreeScope.Element, OnWindowClosed);
+        _window.RegisterStructureChangedEvent(TreeScope.Subtree, OnStructureChanged);
+        _window.RegisterPropertyChangedEvent(TreeScope.Subtree, OnPropertyChanged, PropertiesToWatch());
+        _window.RegisterAutomationEvent(_eventLibrary.Window.WindowOpenedEvent, TreeScope.Subtree, OnWindowOpened);
+        _window.RegisterAutomationEvent(_eventLibrary.Window.WindowClosedEvent, TreeScope.Element, OnWindowClosed);
     }
 
     private void OnStructureChanged(AutomationElement element, StructureChangeType changeType, int[] runtimeId)
     {
-        LogEventFactory.RaiseText($"Structure ");
         _watcher.PokeOnStructureChanged(new AutomationElementObject(element));
     }
 
@@ -50,12 +45,12 @@ public sealed class WindowListener : IDisposable
 
     private void OnWindowOpened(AutomationElement element, EventId eventId)
     {
-        _toggleWindowSubscriber?.NotifyOnOpened(new AutomationElementObject(element));
+        _toggleWindowSubscriber?.NotifyOnOpened(new AutomationElementObject(element), eventId);
     }
 
     private void OnWindowClosed(AutomationElement element, EventId eventId)
     {
-        _toggleWindowSubscriber?.NotifyOnClosed(new AutomationElementObject(element));
+        _toggleWindowSubscriber?.NotifyOnClosed(new AutomationElementObject(element), eventId);
     }
 
     private static PropertyId[] PropertiesToWatch()
@@ -65,6 +60,5 @@ public sealed class WindowListener : IDisposable
 
     public void Dispose()
     {
-        // отписка от UIA-событий — добавится после сверки точного unregister-API FlaUI
     }
 }

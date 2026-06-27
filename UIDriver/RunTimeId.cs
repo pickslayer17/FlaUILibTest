@@ -1,21 +1,51 @@
+using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Tools;
+using UIDriver.Constants;
+
 namespace UIDriver;
 
 public sealed class RunTimeId
 {
-    private readonly int[] _id;
+    public RunTimeIdStates State
+    {
+        get
+        {
+            if (Id.Length == 1)
+            {
+                if (Id[0] == RunTimeIdStates.ErrorTryingGet.ToInt()) return RunTimeIdStates.ErrorTryingGet;
+                if (Id[0] == RunTimeIdStates.Null.ToInt()) return RunTimeIdStates.Null;
 
-    public RunTimeId(int[] id) => _id = id;
+                throw new NotImplementedException("Unexpected single-element RuntimeId value: " + Id[0]);
+            }
 
-    public static RunTimeId FromString(string value) => new(value.Split(',').Select(int.Parse).ToArray());
+            return RunTimeIdStates.Valid;
+        }
+    }
+    private int[] Id { get; init; }
 
-    public override string ToString() => string.Join(",", _id);
+    public RunTimeId(AutomationElement element)
+    {
 
-    public override bool Equals(object? obj) => obj is RunTimeId other && _id.SequenceEqual(other._id);
+        int[] runtimeId = [RunTimeIdStates.ErrorTryingGet.ToInt()];
+        try
+        {
+            runtimeId = element.Properties.RuntimeId.ValueOrDefault ?? [RunTimeIdStates.Null.ToInt()];
+        }
+        catch (Exception ex)
+        {
+            LogEventFactory.RaiseText($"Failed to get RuntimeId for element: {ex.Message}");
+        }
+        Id = runtimeId;
+    }
+
+    public override string ToString() => string.Join(",", Id);
+
+    public override bool Equals(object? obj) => obj is RunTimeId other && Id.SequenceEqual(other.Id);
 
     public override int GetHashCode()
     {
         var hash = new HashCode();
-        foreach (var part in _id) hash.Add(part);
+        foreach (var part in Id) hash.Add(part);
         return hash.ToHashCode();
     }
 }

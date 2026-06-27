@@ -1,3 +1,5 @@
+using FlaUI.Core.Identifiers;
+
 namespace UIDriver;
 
 public sealed class ToggleWindowListener
@@ -6,15 +8,15 @@ public sealed class ToggleWindowListener
 
     public ToggleWindowListener(ApplicationManager applicationManager) => _applicationManager = applicationManager;
 
-    public void NotifyOnOpened(AutomationElementObject window)
+    public void NotifyOnOpened(AutomationElementObject window, EventId eventId)
     {
         LogEventFactory.RaiseWindowOpened(window.RunTimeId);
-        _applicationManager.CreateWindowContainer(window);
+        _applicationManager.NotifyWindowOpened(window, eventId);
     }
 
-    public void NotifyOnClosed(AutomationElementObject window)
+    public void NotifyOnClosed(AutomationElementObject window, EventId eventId)
     {
         LogEventFactory.RaiseWindowClosed(window.RunTimeId);
-        _applicationManager.RemoveWindowContainer(window.RunTimeId);
+        _applicationManager.NotifyWindowClosed(window.RunTimeId, eventId);
     }
 }

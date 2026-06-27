@@ -1,5 +1,3 @@
-using FlaUI.Core.AutomationElements;
-
 namespace UIDriver;
 
 public sealed class DescendantFinder : IFinder
@@ -16,7 +14,4 @@ public sealed class DescendantFinder : IFinder
 
     public AutomationElementObject[] FindAll(AutomationElementObject source)
         => source.Element.FindAllDescendants(_elementBy.SelfCondition!).Select(e => new AutomationElementObject(e)).ToArray();
-
-    public bool Matches(AutomationElementObject source)
-        => new DefaultMatcher().Matches(source.Element, _elementBy);
 }

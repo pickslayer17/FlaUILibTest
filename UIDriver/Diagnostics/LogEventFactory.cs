@@ -10,7 +10,5 @@ public static class LogEventFactory
 
     public static void RaiseWindowClosed(RunTimeId window) => LogEventHandler.Handle(new WindowClosed(window));
 
-    public static void RaiseWindowEventBase(RunTimeId window) => LogEventHandler.Handle(new WindowEventBase(window));
-
     public static void RaiseText(string text) => LogEventHandler.Handle(new TextEvent(text));
 }

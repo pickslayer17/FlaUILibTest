@@ -7,9 +7,15 @@ namespace UIDriver;
 
 public sealed class Driver : IDisposable
 {
-    private readonly UIA3Automation _automation = new();
-    private readonly ApplicationManager _applicationManager = new();
+    private readonly UIA3Automation _automation;
+    private readonly ApplicationManager _applicationManager;
     private Application? _application;
+
+    public Driver()
+    {
+        _automation = new UIA3Automation();
+        _applicationManager = new ApplicationManager(_automation);
+    }
 
     public void Launch(ProcessStartInfo processStartInfo)
     {

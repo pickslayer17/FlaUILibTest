@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using UIDriver.Matchers;
 
 namespace UIDriver;
 
@@ -12,9 +13,9 @@ public sealed class Watcher
         _windowSource = windowSource;
     }
 
-    public async Task<AutomationElementObject> ExecuteOrderAsync(Order order, IFinder finder)
+    public async Task<AutomationElementObject> ExecuteOrderAsync(Order order, IFinder finder, IMatcher matcher)
     {
-        var watch = CreateWatch(finder);
+        var watch = CreateWatch(finder, matcher);
         var result = await WaitWatchAsync(watch, order.By.Timeout);
         CompleteWatch(watch, order);
         LogEventFactory.RaiseElementResolved(order.Id);
@@ -44,9 +45,9 @@ public sealed class Watcher
         }
     }
 
-    private Watch CreateWatch(IFinder finder)
+    private Watch CreateWatch(IFinder finder, IMatcher matcher)
     {
-        var watch = new Watch(finder);
+        var watch = new Watch(finder, matcher);
         _watches.TryAdd(watch.Id, watch);
 
         return watch;

@@ -1,3 +1,5 @@
+using FlaUI.Core;
+
 namespace UIDriver;
 
 public sealed class WindowContainer : IDisposable
@@ -6,11 +8,11 @@ public sealed class WindowContainer : IDisposable
     private readonly WindowManager _windowManager;
     private readonly WindowListener _windowListener;
 
-    public WindowContainer(AutomationElementObject window)
+    public WindowContainer(AutomationElementObject window, IEventLibrary eventLibrary)
     {
         _watcher = new Watcher(window);
         _windowManager = new WindowManager(window, _watcher);
-        _windowListener = new WindowListener(window, _watcher);
+        _windowListener = new WindowListener(window, _watcher, eventLibrary);
         _windowListener.StartListening();
     }
 

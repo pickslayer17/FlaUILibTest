@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using UIDriver.Matchers;
 
 namespace UIDriver;
 
@@ -16,8 +17,12 @@ public sealed class WindowManager
 
     public Task<AutomationElementObject> ProcessOrderAsync(Order order)
     {
-        _orders.TryAdd(order.Id, order);
+        if(!_orders.TryAdd(order.Id, order))
+            throw new InvalidOperationException($"Order with id {order.Id} is already registered.");
+
         var finder = FinderFactory.GetFinder(order.By);
-        return _watcher.ExecuteOrderAsync(order, finder);
+        var matcher = MatcherFactory.GetMatcher(order.By);
+
+        return _watcher.ExecuteOrderAsync(order, finder, matcher);
     }
 }
