@@ -83,7 +83,7 @@ public sealed class ApplicationManager
         LogEventFactory.RaiseText($"\ncontainers count = {_containers.Count}");
         foreach (var (i, kvp) in _containers.Select((kvp, i) => (i, kvp)))
         {
-            LogEventFactory.RaiseText($"[CONTAINER][{i}] = [{kvp.Key}][{kvp.Value}]");
+            LogEventFactory.RaiseText($"[CONTAINER][{i}] = [{kvp.Key}][{kvp.Value.WindowTitle}]");
         }
         LogEventFactory.RaiseText($"\n\n");
     }

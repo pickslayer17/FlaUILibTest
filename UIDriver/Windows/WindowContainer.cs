@@ -4,12 +4,15 @@ namespace UIDriver;
 
 public sealed class WindowContainer : IDisposable
 {
+    public string WindowTitle { get; set; }
+
     private readonly Watcher _watcher;
     private readonly WindowManager _windowManager;
     private readonly WindowListener _windowListener;
 
     public WindowContainer(AutomationElementObject window, IEventLibrary eventLibrary)
     {
+        try { WindowTitle = window.Element.Properties.Name; } catch { }
         _watcher = new Watcher(window);
         _windowManager = new WindowManager(window, _watcher);
         _windowListener = new WindowListener(window, _watcher, eventLibrary);
