@@ -33,6 +33,14 @@ class Program
             Console.WriteLine($"[{i}] - {el.Name}");
 
         Console.ReadLine();
+
+        var foundsRaw = FindAllRecursionRaw(automation, mainWindow, cf =>
+            cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")));
+
+        foreach (var (el, i) in foundsRaw.Select((el, i) => (el, i)))
+            Console.WriteLine($"[{i}] - {el.Name}");
+
+        Console.ReadLine();
         automation.Dispose();
     }
 
@@ -78,6 +86,36 @@ class Program
         void Search(AutomationElement node)
         {
             founds.Add(node);
+
+            var child = walker.GetFirstChild(node);
+            stepsCount++;
+            while (child != null)
+            {
+                Search(child);
+
+                child = walker.GetNextSibling(child);
+                stepsCount++;
+            }
+        }
+
+        Search(root);
+        stopwatch.Stop();
+        Console.WriteLine($"steps={stepsCount} time={stopwatch.Elapsed.TotalMilliseconds:F2}ms count={founds.Count}");
+        return founds;
+    }
+
+    static List<AutomationElement> FindAllRecursionRaw(UIA3Automation automation, AutomationElement root, Func<ConditionFactory, ConditionBase> condition)
+    {
+        var selfCondition = condition(automation.ConditionFactory);
+        var walker = automation.TreeWalkerFactory.GetRawViewWalker();
+        var matcher = new PropertyMatcher(selfCondition);
+        var founds = new List<AutomationElement>();
+        var stepsCount = 0;
+        var stopwatch = Stopwatch.StartNew();
+
+        void Search(AutomationElement node)
+        {
+            if (matcher.Matches(node)) founds.Add(node);
 
             var child = walker.GetFirstChild(node);
             stepsCount++;
