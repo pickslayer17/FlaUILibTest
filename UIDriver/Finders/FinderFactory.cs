@@ -1,5 +1,3 @@
-using UIDriver.Finders;
-using UIDriver.Finders.Decorators;
 using UIDriver.Finders.Finders;
 
 namespace UIDriver;
@@ -13,7 +11,7 @@ public static class FinderFactory
 
         if (by.Parent != null)
         {
-            new AncestorDecorator(finder);
+            new AncestorFinder(finder);
         }
 
         if (by.Ancestor != null)
@@ -35,7 +33,7 @@ public static class FinderFactory
 
 
 
-        
+
 
         return finder;
     }

@@ -1,8 +1,8 @@
-﻿namespace UIDriver.Finders.Decorators;
+﻿namespace UIDriver.Finders.Finders;
 
-public class AncestorDecorator : FinderDecoratorBase
+public class AncestorFinder : FinderDecoratorBase
 {
-    public AncestorDecorator(IFinder inner) : base(inner)
+    public AncestorFinder(IFinder inner) : base(inner)
     {
     }
 

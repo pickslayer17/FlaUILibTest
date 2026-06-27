@@ -1,4 +1,4 @@
-namespace UIDriver.Finders.Decorators;
+namespace UIDriver.Finders;
 
 public abstract class FinderDecoratorBase : IFinder
 {
