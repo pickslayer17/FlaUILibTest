@@ -43,8 +43,6 @@ public sealed class ApplicationManager
     {
         lock (_windowEventLock)
         {
-            LogContainers();
-
             if (window.RunTimeId.State != RunTimeIdStates.Valid)
                 throw new InvalidOperationException($"Invalid window RuntimeId");
 
@@ -55,6 +53,7 @@ public sealed class ApplicationManager
             }
 
             CreateWindowContainer(window);
+            LogContainers();
         }
     }
 
@@ -62,8 +61,6 @@ public sealed class ApplicationManager
     {
         lock (_windowEventLock)
         {
-            LogContainers();
-
             if (id.State != RunTimeIdStates.Valid)
             {
                 throw new InvalidOperationException("should be always valid. smth went wrong");
@@ -73,6 +70,7 @@ public sealed class ApplicationManager
             if (_containers.TryGetValue(id, out _))
             {
                 RemoveWindowContainer(id);
+                
                 return;
             }
 
@@ -115,7 +113,7 @@ public sealed class ApplicationManager
         if(!_containers.TryAdd(window.RunTimeId, container))
             throw new Exception($"Failed to add window container for window [{string.Join(",", window.RunTimeId)}].");
 
-        LogEventFactory.RaiseText($"container wor window[{window.RunTimeId}] created.");
+        LogContainers();
         return container;
     }
 
@@ -123,6 +121,6 @@ public sealed class ApplicationManager
     {
         if (_containers.TryRemove(id, out var container))
             container.Dispose();
-        LogEventFactory.RaiseText("Window container removed: " + id);
+        LogContainers();
     }
 }
