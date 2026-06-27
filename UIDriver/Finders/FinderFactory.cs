@@ -9,14 +9,16 @@ public static class FinderFactory
         IFinder finder;
         finder = new SelfFinder(by);
 
+
+        // this logic not implemented at all. and that the most interesting part - we will talk about it later
         if (by.Parent != null)
         {
-            new AncestorFinder(finder);
+            
         }
 
         if (by.Ancestor != null)
         {
-
+            new AncestorFinder(finder);
         }
         if (by.Children != null)
         {
@@ -26,7 +28,19 @@ public static class FinderFactory
         {
 
         }
-        if (by.Siblings != null)
+        if (by.FollowingSiblings != null)
+        {
+
+        }
+        if (by.Following != null)
+        {
+
+        }
+        if (by.Previous != null)
+        {
+
+        }
+        if (by.PreviousSiblings != null)
         {
 
         }

@@ -8,7 +8,7 @@ namespace UIDriver;
 public sealed class Driver : IDisposable
 {
     public ConditionFactory ConditionFactory => _automation.ConditionFactory;
-    public static  UIA3Automation _automation;// make pivate!!!! make non static!!!!
+    private UIA3Automation _automation;
     private readonly ApplicationManager _applicationManager;
     private Application? _application;
 
