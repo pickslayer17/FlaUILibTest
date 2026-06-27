@@ -1,4 +1,6 @@
 using UIDriver.Finders;
+using UIDriver.Finders.Decorators;
+using UIDriver.Finders.Finders;
 
 namespace UIDriver;
 
@@ -14,7 +16,7 @@ public static class FinderFactory
             new AncestorDecorator(finder);
         }
 
-        if (by.Ancestors != null)
+        if (by.Ancestor != null)
         {
 
         }

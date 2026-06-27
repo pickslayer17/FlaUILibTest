@@ -3,6 +3,7 @@ namespace UIDriver.Finders.Finders;
 public sealed class SelfFinder : IFinder
 {
     private readonly BY _elementBy;
+    public BY BY { get => _elementBy; }
 
     public SelfFinder(BY elementBy) => _elementBy = elementBy;
 
