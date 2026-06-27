@@ -1,6 +1,5 @@
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Tools;
-using System.Xml.Linq;
 using UIDriver.Constants;
 
 namespace UIDriver;

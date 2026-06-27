@@ -14,9 +14,9 @@ public sealed class ToggleWindowListener
         _applicationManager.NotifyWindowOpened(window, eventId);
     }
 
-    public void NotifyOnClosed(AutomationElementObject window, EventId eventId)
+    public void NotifyOnClosed(AutomationElementObject window, EventId eventId, RunTimeId windowRunTimeId)
     {
-        LogEventFactory.RaiseWindowClosed(window.RunTimeId);
-        _applicationManager.NotifyWindowClosed(window.RunTimeId, eventId);
+        LogEventFactory.RaiseWindowClosed(windowRunTimeId);
+        _applicationManager.NotifyWindowClosed(windowRunTimeId, eventId);
     }
 }

@@ -43,7 +43,9 @@ public sealed class ApplicationManager
     {
         lock (_windowEventLock)
         {
-            if(window.RunTimeId.State != RunTimeIdStates.Valid)
+            LogContainers();
+
+            if (window.RunTimeId.State != RunTimeIdStates.Valid)
                 throw new InvalidOperationException($"Invalid window RuntimeId");
 
             if(_containers.TryGetValue(window.RunTimeId, out _))
@@ -60,9 +62,11 @@ public sealed class ApplicationManager
     {
         lock (_windowEventLock)
         {
+            LogContainers();
+
             if (id.State != RunTimeIdStates.Valid)
             {
-                LogEventFactory.RaiseText($"invalid window runtimeid");
+                throw new InvalidOperationException("should be always valid. smth went wrong");
                 return;
             }
 
@@ -74,6 +78,16 @@ public sealed class ApplicationManager
 
             LogEventFactory.RaiseText($"Try to remove container, but it wasn't in collection");
         }
+    }
+
+    private void LogContainers()
+    {
+        LogEventFactory.RaiseText($"\ncontainers count = {_containers.Count}");
+        foreach (var (i, kvp) in _containers.Select((kvp, i) => (i, kvp)))
+        {
+            LogEventFactory.RaiseText($"[CONTAINER][{i}] = [{kvp.Key}][{kvp.Value}]");
+        }
+        LogEventFactory.RaiseText($"\n\n");
     }
 
     private WindowContainer ResolveContainer(BY by) => by.Scope switch

@@ -31,11 +31,11 @@ public sealed class Watch
 
     public bool TryResolveFindDescendant(AutomationElementObject source)
     {
-        LogEventFactory.RaiseText($"Trying to resolve Descendants with runtimeId: {source.RunTimeId}");
         if (_tcs.Task.IsCompleted) return true;
 
         lock (_findLock)
         {
+            LogEventFactory.RaiseText($"Trying to resolve Descendants with runtimeId: {source.RunTimeId}");
             var found = _finder.Find(source);
             if (found is null) return false;
 
@@ -50,7 +50,11 @@ public sealed class Watch
         lock (_findLock)
         {
             LogEventFactory.RaiseText($"Trying to resolve match for element with runtimeId: {source.RunTimeId}");
-            if (_matcher.Matches(source)) Complete(source);
+            if (_matcher.Matches(source))
+            {
+                LogEventFactory.RaiseText($"REsolved by match\n\n\n\n\n\n\n");
+                Complete(source);
+            }
 
             return false;
         }
