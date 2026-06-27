@@ -1,7 +1,6 @@
 using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Definitions;
-using FlaUI.Core.EventHandlers;
 using FlaUI.Core.Identifiers;
 
 namespace UIDriver;
@@ -47,7 +46,7 @@ public sealed class WindowListener : IDisposable
     {
         if (_ignoredStructureChangeTypes.Any(t => t == changeType))
             return;
-        
+
         _watcher.PokeOnStructureChanged(new AutomationElementObject(element));
     }
 
@@ -61,7 +60,7 @@ public sealed class WindowListener : IDisposable
 
     private void OnWindowOpened(AutomationElement element, EventId eventId)
     {
-        if(element.Properties.ProcessId.TryGetValue(out var processId) || processId != 0)
+        if (element.Properties.ProcessId.TryGetValue(out var processId) || processId != 0)
             LogEventFactory.RaiseText($"window opened with process id[{processId}]");
 
         _toggleWindowSubscriber?.NotifyOnOpened(new AutomationElementObject(element), eventId);

@@ -21,7 +21,7 @@ public sealed class RunTimeId
             return RunTimeIdStates.Valid;
         }
     }
-    private int[] Id { get; init; }
+    public int[] Id { get; init; }
 
     public RunTimeId(int[] id)
     {

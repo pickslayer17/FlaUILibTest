@@ -1,4 +1,5 @@
-﻿using FlaUI.Core.Definitions;
+﻿using FlaUI.Core.Conditions;
+using FlaUI.Core.Definitions;
 using System.Diagnostics;
 using UIDriver;
 
@@ -17,6 +18,15 @@ class Program
         driver.Launch(processStartInfo);
         var elementFromDrvier = driver.Locator(cf => cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")));
         await elementFromDrvier.ClickAsync();
+
+        ConditionFactory condFact = driver.ConditionFactory;
+        var okButtonInFormatCellsBY = new BY 
+        {
+            SelfCondition = condFact.ByControlType(ControlType.Button).And(condFact.ByName("OK")),
+
+        };
+        var okButtonInFormatCells = driver.Locator(okButtonInFormatCellsBY);
+        await okButtonInFormatCells.ClickAsync();
         Console.WriteLine("works!");
 
         Console.ReadLine();

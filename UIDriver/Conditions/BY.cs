@@ -17,5 +17,13 @@ public sealed class BY
 
     public BY? Parent { get; init; }
 
+    public BY[]? Children { get; init; }
+
+    public BY[]? Ancestors { get; init; }
+
+    public BY[]? Descendants { get; init; }
+
+    public BY[]? Siblings { get; init; }
+
     public TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(15);
 }

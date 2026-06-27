@@ -56,7 +56,7 @@ public sealed class Watcher
     private async Task<AutomationElementObject> WaitWatchAsync(Watch watch, TimeSpan timeout)
     {
         if (!watch.TryResolveFindDescendant(_windowSource))
-            await watch.Task.WaitAsync(timeout);
+            await watch.Task.WaitAsync(timeout); // add exeptions for timeouts
 
         return await watch.Task;
     }

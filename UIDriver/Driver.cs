@@ -7,6 +7,7 @@ namespace UIDriver;
 
 public sealed class Driver : IDisposable
 {
+    public ConditionFactory ConditionFactory => _automation.ConditionFactory;
     private readonly UIA3Automation _automation;
     private readonly ApplicationManager _applicationManager;
     private Application? _application;
@@ -20,13 +21,21 @@ public sealed class Driver : IDisposable
     public void Launch(ProcessStartInfo processStartInfo)
     {
         _application = Application.Launch(processStartInfo);
+        _applicationManager.ProcessId = _application.ProcessId;
         _applicationManager.RegisterDesktop(new AutomationElementObject(_automation.GetDesktop()));
         _applicationManager.RegisterDefault(new AutomationElementObject(_application.GetMainWindow(_automation)));
     }
 
-    public Locator Locator(Func<ConditionFactory, ConditionBase> element)
+    public Locator Locator(Func<ConditionFactory, ConditionBase> elementCondition)
     {
-        var by = new BY { SelfCondition = element(_automation.ConditionFactory) };
+        var by = new BY { SelfCondition = elementCondition(_automation.ConditionFactory) };
+        var locator = new Locator(by, _applicationManager);
+
+        return locator;
+    }
+
+    public Locator Locator(BY by)
+    {
         var locator = new Locator(by, _applicationManager);
 
         return locator;

@@ -7,6 +7,7 @@ namespace UIDriver;
 
 public sealed class ApplicationManager
 {
+    public int ProcessId { get; set; }
     public IEventLibrary EventLibrary => _automationBase.EventLibrary;
 
     private readonly AutomationBase _automationBase;
@@ -39,6 +40,7 @@ public sealed class ApplicationManager
         return task;
     }
 
+    // Lock method. all changing of _containers are inside these 2 methods. Dont want to handle it right now. but i think non-locked code should be separated from lock-mechanism in the future
     public void NotifyWindowOpened(AutomationElementObject window, EventId eventId)
     {
         lock (_windowEventLock)
@@ -57,6 +59,7 @@ public sealed class ApplicationManager
         }
     }
 
+    // Lock method
     public void NotifyWindowClosed(RunTimeId id, EventId eventId)
     {
         lock (_windowEventLock)
@@ -102,6 +105,21 @@ public sealed class ApplicationManager
         return order;
     }
 
+    private void ReassignDefaultContainer()
+    {
+        var allApplicationContainers = _containers.Where(kv => kv.Value != _desktopContainer).Where(kv => kv.Value.ProcessId == ProcessId);
+        if (!allApplicationContainers.Any())
+        {
+            LogEventFactory.RaiseText($"IT seems there is no target process window anymore");
+            return;
+        }
+
+        _defaultContainer = allApplicationContainers.First().Value;
+        LogEventFactory.RaiseText($"Default container reassigned");
+    }
+
+    private bool IsDefaultContainerExists() => _containers.Any(kvp => ReferenceEquals(kvp.Value, _defaultContainer));
+
     private WindowContainer CreateWindowContainer(AutomationElementObject window)
     {
         if(window.RunTimeId.State != RunTimeIdStates.Valid)
@@ -120,7 +138,19 @@ public sealed class ApplicationManager
     private void RemoveWindowContainer(RunTimeId id)
     {
         if (_containers.TryRemove(id, out var container))
+        {
             container.Dispose();
-        LogContainers();
+
+            if (!IsDefaultContainerExists())
+            {
+                ReassignDefaultContainer();
+            }
+          
+            LogContainers();
+        }
+        else
+        {
+            throw new InvalidProgramException("we have check on container exist, so its very strange that is wasnt removed");
+        }
     }
 }
