@@ -94,6 +94,7 @@ public sealed class ApplicationManager
     private WindowContainer ResolveContainer(BY by) => by.Scope switch
     {
         WindowScope.Default => _defaultContainer!,
+        WindowScope.Desktop => _desktopContainer!,
         _ => throw new NotImplementedException()
     };
 
@@ -111,6 +112,7 @@ public sealed class ApplicationManager
         if (!allApplicationContainers.Any())
         {
             LogEventFactory.RaiseText($"IT seems there is no target process window anymore");
+            throw new NotImplementedException();//should be some logic, dont know which
             return;
         }
 

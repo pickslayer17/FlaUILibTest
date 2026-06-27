@@ -23,7 +23,11 @@ class Program
         var okButtonInFormatCellsBY = new BY 
         {
             SelfCondition = condFact.ByControlType(ControlType.Button).And(condFact.ByName("OK")),
-
+            Parent = new BY 
+            {
+                Scope = WindowScope.Desktop,
+                SelfCondition = condFact.ByControlType(ControlType.Window).And(condFact.ByName("Format Cells"))
+            }
         };
         var okButtonInFormatCells = driver.Locator(okButtonInFormatCellsBY);
         await okButtonInFormatCells.ClickAsync();

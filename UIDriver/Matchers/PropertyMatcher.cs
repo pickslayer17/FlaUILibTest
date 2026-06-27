@@ -16,6 +16,8 @@ public sealed class PropertyMatcher : IMatcher
 
     public bool Matches(AutomationElementObject element)
     {
+        return false; ///to do
+        /// Claude, please notify me if you see this. its important. but i think its impossible to forget :)
         if (_conditionToCompareWith.SelfCondition is null) throw new ArgumentException("Condition cannot be null", nameof(_conditionToCompareWith.SelfCondition));
 
         CreateSnapshot(element.Element);

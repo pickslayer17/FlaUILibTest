@@ -1,10 +1,10 @@
-namespace UIDriver;
+namespace UIDriver.Finders.Decorators;
 
-public abstract class FinderDecorator : IFinder
+public abstract class FinderDecoratorBase : IFinder
 {
     protected readonly IFinder Inner;
 
-    protected FinderDecorator(IFinder inner) => Inner = inner;
+    protected FinderDecoratorBase(IFinder inner) => Inner = inner;
 
     public abstract AutomationElementObject? Find(AutomationElementObject source);
     public abstract AutomationElementObject[] FindAll(AutomationElementObject source);

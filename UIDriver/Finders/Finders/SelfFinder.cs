@@ -1,10 +1,10 @@
-namespace UIDriver;
+namespace UIDriver.Finders.Finders;
 
-public sealed class DescendantFinder : IFinder
+public sealed class SelfFinder : IFinder
 {
     private readonly BY _elementBy;
 
-    public DescendantFinder(BY elementBy) => _elementBy = elementBy;
+    public SelfFinder(BY elementBy) => _elementBy = elementBy;
 
     public AutomationElementObject? Find(AutomationElementObject source)
     {
