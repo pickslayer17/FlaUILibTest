@@ -26,9 +26,7 @@ public sealed class WindowContainer : IDisposable
 
     public Task<AutomationElementObject> SubmitOrderAsync(Order order) => _windowManager.ProcessOrderAsync(order);
 
-    public void RegisterOpenWindowEvent(ToggleWindowListener subscriber) => _windowListener.RegisterOpenWindowEvent(subscriber);
-
-    public void RegisterCloseWindowEvent(ToggleWindowListener subscriber) => _windowListener.RegisterCloseWindowEvent(subscriber);
+    public void RegisterToggleWindowEvent(ToggleWindowListener subscriber) => _windowListener.RegisterToggleWindowEvent(subscriber);
 
     public void Dispose() => _windowListener.Dispose();
 }

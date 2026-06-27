@@ -52,8 +52,9 @@ public sealed class Watch
             LogEventFactory.RaiseText($"Trying to resolve match for element with runtimeId: {source.RunTimeId}");
             if (_matcher.Matches(source))
             {
-                LogEventFactory.RaiseText($"REsolved by match\n\n\n\n\n\n\n");
                 Complete(source);
+                LogEventFactory.RaiseText($"REsolved by match\n\n\n\n\n\n\n");
+                return true;
             }
 
             return false;

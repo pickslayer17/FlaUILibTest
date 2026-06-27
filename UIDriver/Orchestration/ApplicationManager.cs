@@ -32,12 +32,15 @@ public sealed class ApplicationManager
 
     public Task<AutomationElementObject> RequestElementAsync(BY by)
     {
-        var container = ResolveContainer(by);
-        var order = RegisterOrder(by);
+        lock (_windowEventLock)
+        {
+            var container = ResolveContainer(by);
+            var order = RegisterOrder(by);
 
-        var task = container.SubmitOrderAsync(order);
-        order.Task = task;
-        return task;
+            var task = container.SubmitOrderAsync(order);
+            order.Task = task;
+            return task;
+        }
     }
 
     // Lock method. all changing of _containers are inside these 2 methods. Dont want to handle it right now. but i think non-locked code should be separated from lock-mechanism in the future
@@ -128,8 +131,7 @@ public sealed class ApplicationManager
             throw new Exception($"Invalid window RuntimeId: {string.Join(",", window.RunTimeId)}");
 
         var container = new WindowContainer(window, EventLibrary);
-        container.RegisterOpenWindowEvent(_toggleWindowListener);
-        container.RegisterCloseWindowEvent(_toggleWindowListener);
+        container.RegisterToggleWindowEvent(_toggleWindowListener);
         if(!_containers.TryAdd(window.RunTimeId, container))
             throw new Exception($"Failed to add window container for window [{string.Join(",", window.RunTimeId)}].");
 
