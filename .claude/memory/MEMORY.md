@@ -1,1 +1,2 @@
 - [UIDriver status](uidriver-status.md) — состояние проекта, что сделано, что отложено сознательно, гочи по RuntimeId/событиям
+- [Working with Denis](working-with-denis.md) — «делаем» значит делаем; возражения только после исполнения
