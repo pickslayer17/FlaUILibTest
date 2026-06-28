@@ -31,7 +31,7 @@ class Program
         var closeCondition = automation.ConditionFactory.ByControlType(ControlType.Button).And(automation.ConditionFactory.ByName("Close"));
         var a1Condition = automation.ConditionFactory.ByControlType(ControlType.DataItem).And(automation.ConditionFactory.ByAutomationId("A1"));
         var scrollBarCondition = automation.ConditionFactory.ByControlType(ControlType.ScrollBar).And(automation.ConditionFactory.ByClassName("NetUIScrollBar"));
-        var targetCondition = closeCondition;
+        var targetCondition = a1Condition;
 
         Console.ReadLine();
         Console.WriteLine("\n=== CACHED SEARCH ===");
