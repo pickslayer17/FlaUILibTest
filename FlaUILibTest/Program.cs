@@ -26,7 +26,8 @@ class Program
 
         var closeCondition = automation.ConditionFactory.ByControlType(ControlType.Button).And(automation.ConditionFactory.ByName("Close"));
         var a1Condition = automation.ConditionFactory.ByControlType(ControlType.DataItem).And(automation.ConditionFactory.ByAutomationId("A1"));
-        var targetCondition = a1Condition;
+        var scrollBarCondition = automation.ConditionFactory.ByControlType(ControlType.ScrollBar).And(automation.ConditionFactory.ByClassName("NetUIScrollBar"));
+        var targetCondition = scrollBarCondition;
 
         var convertedCondition = ConditionConverter.ToNative(automation, targetCondition);
         var nativeMatcher = new NativePropertyMatcher(targetCondition).Matches;
@@ -67,6 +68,7 @@ class Program
         NativeSearch("[5] native RawViewWalker", nativeAutomation.RawViewWalker).FindAll(nativeRoot);
 
         // CASE 6: native ControlViewWalker (no condition)
+
         Console.WriteLine("\n=== [6] native ControlViewWalker ===");
         NativeSearch("[6] native ControlViewWalker", nativeAutomation.ControlViewWalker).FindFirst(nativeRoot);
         NativeSearch("[6] native ControlViewWalker", nativeAutomation.ControlViewWalker).FindAll(nativeRoot);
@@ -170,39 +172,33 @@ class Program
 
 public static class Leaderboard
 {
-    public static string FindFirstWinnerLabel = "";
-    public static double FindFirstWinnerTime = double.MaxValue;
-    public static string FindFirstLoserLabel = "";
-    public static double FindFirstLoserTime = double.MinValue;
-
-    public static string FindAllWinnerLabel = "";
-    public static double FindAllWinnerTime = double.MaxValue;
-    public static string FindAllLoserLabel = "";
-    public static double FindAllLoserTime = double.MinValue;
+    private static readonly List<(string Label, double Time, int Count)> _findFirst = new();
+    private static readonly List<(string Label, double Time, int Count)> _findAll = new();
 
     public static void ReportFindFirst(string label, double time, bool found)
     {
-        if (!found || time <= 0) return;
-        if (time < FindFirstWinnerTime) { FindFirstWinnerTime = time; FindFirstWinnerLabel = label; }
-        if (time > FindFirstLoserTime) { FindFirstLoserTime = time; FindFirstLoserLabel = label; }
+        _findFirst.Add((label, time, found ? 1 : 0));
     }
 
     public static void ReportFindAll(string label, double time, int count)
     {
-        if (count <= 0 || time <= 0) return;
-        if (time < FindAllWinnerTime) { FindAllWinnerTime = time; FindAllWinnerLabel = label; }
-        if (time > FindAllLoserTime) { FindAllLoserTime = time; FindAllLoserLabel = label; }
+        _findAll.Add((label, time, count));
     }
 
     public static void PrintResults()
     {
-        Console.WriteLine("\n========== WINNERS ==========");
-        Console.WriteLine($"FindFirst: {FindFirstWinnerLabel} ({FindFirstWinnerTime:F2}ms)");
-        Console.WriteLine($"FindAll:   {FindAllWinnerLabel} ({FindAllWinnerTime:F2}ms)");
+        Print("FindFirst", _findFirst);
+        Print("FindAll", _findAll);
+    }
 
-        Console.WriteLine("\n========== LOSERS ==========");
-        Console.WriteLine($"FindFirst: {FindFirstLoserLabel} ({FindFirstLoserTime:F2}ms)");
-        Console.WriteLine($"FindAll:   {FindAllLoserLabel} ({FindAllLoserTime:F2}ms)");
+    private static void Print(string title, List<(string Label, double Time, int Count)> results)
+    {
+        var sorted = results.OrderBy(result => result.Count == 0).ThenBy(result => result.Time).ToList();
+        var labelWidth = sorted.Count == 0 ? 0 : sorted.Max(result => result.Label.Length);
+
+        Console.WriteLine($"\n========== {title} ==========");
+        foreach (var (item, rank) in sorted.Select((item, index) => (item, index + 1)))
+            Console.WriteLine($"[{rank,2}]  {item.Label.PadRight(labelWidth)}  {item.Time,8:F2}ms  count={item.Count}");
     }
 }
 
