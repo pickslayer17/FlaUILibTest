@@ -215,10 +215,11 @@ class Program
         {
              var a = root.FindAllDescendants(condition);
         }, message: "find directly");
+
         ExecuteInCacheMode(() =>
         {
              var a = root.FindAllDescendants(condition);
-        }, message: "find directly with filter", treeFilter: condition);
+        }, message: "find directly with filter");
         
         ExecuteInCacheMode(() =>
         {
@@ -232,14 +233,27 @@ class Program
         {
              var snapshot = BuildCachedNode(mainWindowCached, null);
         }, message: "cached node tree built");
-        
 
         var result  = new List<AutomationElement>();
+        
+
+        var cacheWatch = Stopwatch.StartNew();
+        FindInCache(mainWindowCached, condition, result);
+         cacheWatch.Stop();
+        cacheWholeSearchTime+=cacheWatch.Elapsed.TotalMilliseconds;
+        Console.WriteLine($"[ebaaaaat v nachale {cacheWatch.Elapsed.TotalMilliseconds:F2}ms");
+
+
         ExecuteInCacheMode(() =>
         {
              FindInCache(mainWindowCached, condition, result);
         }, message: "Find in cache");
-        
+
+          cacheWatch = Stopwatch.StartNew();
+        FindInCache(mainWindowCached, condition, result);
+         cacheWatch.Stop();
+        cacheWholeSearchTime+=cacheWatch.Elapsed.TotalMilliseconds;
+        Console.WriteLine($"[ebaaaaat {cacheWatch.Elapsed.TotalMilliseconds:F2}ms");
         System.Console.WriteLine($"Whole time in for cache actions: {cacheWholeSearchTime:f2}ms");
         Leaderboard.ReportFindAll("[13] CachedSearch", cacheWholeSearchTime, result.Count, 0);
 
@@ -248,37 +262,42 @@ class Program
 
     static double cacheWholeSearchTime = 0;
 
-    static void ExecuteInCacheMode(Action action, ConditionBase treeFilter = null, string message = null)
-    {
-        var cacheWatch = Stopwatch.StartNew();
-        CacheRequest cacheRequest;
-        cacheRequest = new CacheRequest
-        {
-            TreeScope = TreeScope.Subtree,
-            AutomationElementMode = AutomationElementMode.Full
-        };
-        if(treeFilter!= null)
-            cacheRequest.TreeFilter = treeFilter;
-        
-        cacheRequest.Add(automation.PropertyLibrary.Element.ProcessId);
-        cacheRequest.Add(automation.PropertyLibrary.Element.RuntimeId);
-        cacheRequest.Add(automation.PropertyLibrary.Element.Name);
-        cacheRequest.Add(automation.PropertyLibrary.Element.ControlType);
-        cacheRequest.Add(automation.PropertyLibrary.Element.AutomationId);
 
-        using (cacheRequest.Activate())
+
+    static CacheRequest ExecuteInCacheMode(Action action, ConditionBase treeFilter = null, string message = null)
+    {
+        CacheRequest cacheRequest;
+        var cacheWatch = Stopwatch.StartNew();
+
+            cacheRequest = new CacheRequest
+            {
+                TreeScope = TreeScope.Subtree,
+                AutomationElementMode = AutomationElementMode.Full
+            };
+       
+            if(treeFilter!= null)
+                cacheRequest.TreeFilter = treeFilter;
+            
+            cacheRequest.Add(automation.PropertyLibrary.Element.ProcessId);
+            cacheRequest.Add(automation.PropertyLibrary.Element.RuntimeId);
+            cacheRequest.Add(automation.PropertyLibrary.Element.Name);
+            cacheRequest.Add(automation.PropertyLibrary.Element.ControlType);
+            cacheRequest.Add(automation.PropertyLibrary.Element.AutomationId);
+        using( cacheRequest.Activate())
         {
-            action.Invoke();
+             action.Invoke();
         }
       
         cacheWatch.Stop();
         cacheWholeSearchTime+=cacheWatch.Elapsed.TotalMilliseconds;
         Console.WriteLine($"[ExecuteInCacheMode] '{message}' completed. Time: {cacheWatch.Elapsed.TotalMilliseconds:F2}ms");
+        return cacheRequest;
     }
 
     static void FindInCache(AutomationElement cache, ConditionBase condition, List<AutomationElement> result)
     {
-        if(new PropertyMatcher(condition).Matches(cache)) result.Add(cache);
+        var native = ((UIA3FrameworkAutomationElement)cache.FrameworkAutomationElement).NativeElement;
+        if(new CachedNativePropertyMatcher(condition).Matches(native)) result.Add(cache);
 
         foreach (var child in cache.CachedChildren)
         {
@@ -556,6 +575,92 @@ public sealed class PropertyMatcher
     private object? GetPropertyValue(AutomationElement element, PropertyId propertyId)
     {
         try { return element.FrameworkAutomationElement.GetPropertyValue(propertyId); }
+        catch { return null; }
+    }
+}
+
+public sealed class CachedPropertyMatcher
+{
+    private static readonly System.Reflection.MethodInfo InternalGetPropertyValue =
+        typeof(FlaUI.Core.FrameworkAutomationElementBase).GetMethod(
+            "InternalGetPropertyValue",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
+            null,
+            new[] { typeof(int), typeof(bool), typeof(bool) },
+            null)!;
+
+    private readonly ConditionBase _condition;
+
+    public CachedPropertyMatcher(ConditionBase condition)
+    {
+        _condition = condition;
+    }
+
+    public bool Matches(AutomationElement element) => Matches(element, _condition);
+
+    private bool Matches(AutomationElement element, ConditionBase condition) => condition switch
+    {
+        PropertyCondition propertyCondition => PropertyMatches(element, propertyCondition),
+        AndCondition andCondition => andCondition.Conditions.All(child => Matches(element, child)),
+        OrCondition orCondition => orCondition.Conditions.Any(child => Matches(element, child)),
+        NotCondition notCondition => !Matches(element, notCondition.Condition),
+        TrueCondition => true,
+        FalseCondition => false,
+        _ => throw new NotImplementedException($"Condition type {condition.GetType().Name} is not supported."),
+    };
+
+    private bool PropertyMatches(AutomationElement element, PropertyCondition propertyCondition)
+    {
+        var actual = GetCachedPropertyValue(element, propertyCondition.Property);
+        return EqualityComparer<object?>.Default.Equals(actual, propertyCondition.Value);
+    }
+
+    private object? GetCachedPropertyValue(AutomationElement element, PropertyId propertyId)
+    {
+        try { return InternalGetPropertyValue.Invoke(element.FrameworkAutomationElement, new object[] { propertyId.Id, true, false }); }
+        catch { return null; }
+    }
+}
+
+public sealed class CachedNativePropertyMatcher
+{
+    private readonly ConditionBase _condition;
+
+    public CachedNativePropertyMatcher(ConditionBase condition)
+    {
+        _condition = condition;
+    }
+
+    public bool Matches(Interop.UIAutomationClient.IUIAutomationElement element) => Matches(element, _condition);
+
+    private bool Matches(Interop.UIAutomationClient.IUIAutomationElement element, ConditionBase condition) => condition switch
+    {
+        PropertyCondition propertyCondition => PropertyMatches(element, propertyCondition),
+        AndCondition andCondition => andCondition.Conditions.All(child => Matches(element, child)),
+        OrCondition orCondition => orCondition.Conditions.Any(child => Matches(element, child)),
+        NotCondition notCondition => !Matches(element, notCondition.Condition),
+        TrueCondition => true,
+        FalseCondition => false,
+        _ => throw new NotImplementedException($"Condition type {condition.GetType().Name} is not supported."),
+    };
+
+    private bool PropertyMatches(Interop.UIAutomationClient.IUIAutomationElement element, PropertyCondition propertyCondition)
+    {
+        var actual = Normalize(GetCachedPropertyValue(element, propertyCondition.Property.Id));
+        var expected = Normalize(propertyCondition.Value);
+        return Equals(actual, expected);
+    }
+
+    private static object? Normalize(object? value) => value switch
+    {
+        ControlType controlType => ControlTypeConverter.ToControlTypeNative(controlType),
+        Enum enumValue => Convert.ToInt32(enumValue),
+        _ => value
+    };
+
+    private object? GetCachedPropertyValue(Interop.UIAutomationClient.IUIAutomationElement element, int propertyId)
+    {
+        try { return element.GetCachedPropertyValue(propertyId); }
         catch { return null; }
     }
 }
