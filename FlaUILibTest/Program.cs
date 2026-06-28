@@ -22,6 +22,7 @@ class Program
         var mainWindow = application.GetMainWindow(automation);
 
         Console.ReadLine();
+        
 
         var nativeAutomation = automation.NativeAutomation;
         var nativeRoot = ((UIA3FrameworkAutomationElement)mainWindow.FrameworkAutomationElement).NativeElement;
@@ -216,16 +217,24 @@ class Program
 
             var founds = new List<AutomationElement>();
 
-            var mainWindowCondition = automation.ConditionFactory.ByControlType(ControlType.Window).And(automation.ConditionFactory.ByName("Excel"));
+            var mainWindowCondition = automation.ConditionFactory
+            .ByControlType(ControlType.Window)
+            .And(automation.ConditionFactory
+                .ByName("Book1 - Excel")
+                .Or(automation.ConditionFactory
+                    .ByName("Excel")
+                    )
+                );
             var a = root.FindFirst(TreeScope.Subtree, mainWindowCondition);
-            var b = a.Properties.RuntimeId;
-            var c = a.CachedChildren;
 
-            foreach(var child in c)
-            {
-                var childCildren = child.CachedChildren;
-            }
-
+            var treeStopwatch = Stopwatch.StartNew();
+            var treeOutput = new System.Text.StringBuilder();
+            PrintCachedTree(a, 0, treeOutput);
+            treeStopwatch.Stop();
+            Console.WriteLine($"cached tree built in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
+            Console.WriteLine(treeOutput.ToString());
+            Console.WriteLine($"cached tree built in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
+            Console.WriteLine($"===STEPS COUNT = [{printCachedTreeSteps}]===");
 
             var node = conditionWalker.GetFirstChild(root);
             stepsCount++;
@@ -259,6 +268,19 @@ class Program
 
             return founds;
         }
+    }
+
+    static int printCachedTreeSteps =0;
+    static void PrintCachedTree(AutomationElement element, int depth, System.Text.StringBuilder output)
+    {
+        printCachedTreeSteps++;
+        var name = SafeName(element);
+        var processId = SafeProcessId(element);
+        var runtimeId = SafeRunTimeId(element).ToFormattedString();
+        output.AppendLine($"{new string(' ', depth * 2)}name='{name}' pid={processId} runtimeId={runtimeId}");
+
+        foreach (var child in element.CachedChildren)
+            PrintCachedTree(child, depth + 1, output);
     }
 
     static bool IsPresentInWindowCached(ITreeWalker rawWalker, AutomationElement element, int windowProcessId, int[] windowRuntimeId, int[] desktopRuntimeId, ref int count)
