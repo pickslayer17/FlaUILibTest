@@ -36,9 +36,9 @@ class Program
         HybridSearchFind(mainWindow, targetCondition);
         HybridSearchFind(mainWindow, targetCondition, true);
 
-        Console.WriteLine("\n=== HYBRID SEARCH CACHED ===");
-        HybridSearchFindCached(mainWindow, targetCondition);
-        HybridSearchFindCached(mainWindow, targetCondition, true);
+        Console.WriteLine("\n=== CACHED SEARCH ===");
+        CachedSearch(mainWindow, targetCondition);
+        CachedSearch(mainWindow, targetCondition, true);
         Console.ReadLine();
 
         var convertedCondition = ConditionConverter.ToNative(automation, targetCondition);
@@ -193,138 +193,44 @@ class Program
         throw new Exception("oppa nihuya sebe! desktop proeban, parent == null");
     }
 
-    static List<AutomationElement> HybridSearchFindCached(AutomationElement root, ConditionBase condition, bool findAll = false)
+    static List<AutomationElement> CachedSearch(AutomationElement root, ConditionBase condition, bool findAll = false)
     {
-        var cacheRequest = new CacheRequest
-        {
-            TreeScope = TreeScope.Subtree,
-            AutomationElementMode = AutomationElementMode.Full
-        };
+        var cacheRequest = new CacheRequest { TreeScope = TreeScope.Subtree };
         cacheRequest.Add(automation.PropertyLibrary.Element.ProcessId);
         cacheRequest.Add(automation.PropertyLibrary.Element.RuntimeId);
         cacheRequest.Add(automation.PropertyLibrary.Element.Name);
-        var rawWalker = automation.TreeWalkerFactory.GetRawViewWalker();
-        var windowRuntimeId = SafeRunTimeId(root);
-        var desktopRuntimeId = SafeRunTimeId(automation.GetDesktop());
-        var windowProcessId = SafeProcessId(root);
-        Stopwatch treeStopwatch = Stopwatch.StartNew();
-        using (cacheRequest. Activate())
+        cacheRequest.Add(automation.PropertyLibrary.Element.ControlType);
+        cacheRequest.Add(automation.PropertyLibrary.Element.AutomationId);
+
+        var matcher = new PropertyMatcher(condition);
+        var founds = new List<AutomationElement>();
+        var stopwatch = Stopwatch.StartNew();
+
+        using (cacheRequest.Activate())
         {
-        
-            //var conditionWalker = automation.TreeWalkerFactory.GetCustomTreeWalker(condition);
-            int stepsCount = 0;
+            var window = root.FindFirst(TreeScope.Subtree, condition);
 
-            var founds = new List<AutomationElement>();
-
-            var mainWindowCondition = automation.ConditionFactory
-            .ByControlType(ControlType.Window)
-            .And(automation.ConditionFactory
-                .ByName("Book1 - Excel")
-                .Or(automation.ConditionFactory
-                    .ByName("Excel")
-                    )
-                );
-            var a = root.FindFirst(TreeScope.Subtree, mainWindowCondition);
-            treeStopwatch.Stop();
-            Console.WriteLine($"cached request in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
-           
-            treeStopwatch = Stopwatch.StartNew();
-            var treeOutput = new System.Text.StringBuilder();
-            PrintCachedTree(a, 0, treeOutput);
-            treeStopwatch.Stop();
-            Console.WriteLine($"cached tree built in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
-
-            // Console.WriteLine($"cached tree built in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
-            // Console.WriteLine(treeOutput.ToString());
-            // Console.WriteLine($"cached tree built in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
-            // Console.WriteLine($"===STEPS COUNT = [{printCachedTreeSteps}]===");
-        }
-       
-        treeStopwatch = Stopwatch.StartNew();
-        A1Cached.Click();
-        treeStopwatch.Stop();
-        Console.WriteLine($"UN cached element clicked in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
-        
-            // var node = conditionWalker.GetFirstChild(root);
-            // stepsCount++;
-
-            // if (findAll == false)
-            // {
-            //     stopwatch.Stop();
-            //     Console.WriteLine($"[FindFirst] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms found={node != null} steps={stepsCount}");
-            //     Leaderboard.ReportFindFirst("[13] FlaUI HybridCached", stopwatch.Elapsed.TotalMilliseconds, node != null, stepsCount);
-            //     return new List<AutomationElement> { node };
-            // }
-
-            // while (node != null)
-            // {
-            //     if (conditionWalker.GetFirstChild(node) != null) throw new Exception("oppa nihuya sebe!...");
-
-            //     if (!IsPresentInWindowCached(rawWalker, node, windowProcessId, windowRuntimeId, desktopRuntimeId, ref stepsCount)) break;
-
-            //     founds.Add(node);
-            //     node = conditionWalker.GetNextSibling(node);
-            //     stepsCount++;
-            // }
-
-            // stopwatch.Stop();
-
-            // Console.WriteLine($"[FindAll] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms count={founds.Count} steps={stepsCount}");
-            // foreach (var (element, index) in founds.Select((element, index) => (element, index)))
-            //     Console.WriteLine($"[{index}] - {SafeName(element)} {SafeRunTimeId(element).ToFormattedString()}");
-
-            // Leaderboard.ReportFindAll("[13] FlaUI HybridCached", stopwatch.Elapsed.TotalMilliseconds, founds.Count, stepsCount);
-
-            // return founds;
-        return null;
-    }
-
-    static AutomationElement A1Cached;
-    static int printCachedTreeSteps =0;
-    static void PrintCachedTree(AutomationElement element, int depth, System.Text.StringBuilder output)
-    {
-        printCachedTreeSteps++;
-        var name = SafeName(element);
-        var processId = SafeProcessId(element);
-        var runtimeId = SafeRunTimeId(element).ToFormattedString();
-
-
-        if((string)name == "\"A\" 1") A1Cached = element;
-
-        output.AppendLine($"{new string(' ', depth * 2)}name='{name}' pid={processId} runtimeId={runtimeId}");
-
-        foreach (var child in element.CachedChildren)
-            PrintCachedTree(child, depth + 1, output);
-    }
-
-    static bool IsPresentInWindowCached(ITreeWalker rawWalker, AutomationElement element, int windowProcessId, int[] windowRuntimeId, int[] desktopRuntimeId, ref int count)
-    {
-        var elementProcessId = SafeProcessId(element);
-        count++;
-        if (elementProcessId == 0) throw new Exception("oppa nihuya sebe! element bez ProcessId");
-        if (elementProcessId != windowProcessId) return false;
-
-        var parentCacheRequest = new CacheRequest
-        {
-            TreeScope = TreeScope.Parent,
-            AutomationElementMode = AutomationElementMode.Full
-        };
-        using (parentCacheRequest.Activate())
-        {
-            var parent = rawWalker.GetParent(element);
-            count++;
-            while (parent != null)
+            bool Search(AutomationElement node)
             {
-                var parentRuntimeId = SafeRunTimeId(parent);
-                if (parentRuntimeId.SequenceEqual(windowRuntimeId)) return true;
-                if (parentRuntimeId.SequenceEqual(desktopRuntimeId)) return false;
-
-                parent = parent.CachedParent;
-                count++;
+                if (matcher.Matches(node))
+                {
+                    founds.Add(node);
+                    if (!findAll) return true;
+                }
+                foreach (var child in node.CachedChildren)
+                    if (Search(child)) return true;
+                return false;
             }
+
+            Search(root);
         }
 
-        throw new Exception("oppa nihuya sebe! desktop proeban, parent == null");
+        stopwatch.Stop();
+        Console.WriteLine($"[{(findAll ? "FindAll" : "FindFirst")}] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms count={founds.Count}");
+        foreach (var (element, index) in founds.Select((element, index) => (element, index)))
+            Console.WriteLine($"[{index}] - {SafeName(element)} {SafeRunTimeId(element).ToFormattedString()}");
+
+        return founds;
     }
 
     static int[] SafeRunTimeId(AutomationElement element)
