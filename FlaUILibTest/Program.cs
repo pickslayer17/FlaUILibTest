@@ -206,10 +206,19 @@ class Program
                 )
             );
           
-        var request = ExecuteInCacheMode(() =>
+        ExecuteInCacheMode(() =>
         {
              mainWindowCached = root.FindFirst(TreeScope.Subtree, mainWindowCondition);
         }, message: "Request of cashed window");
+
+        ExecuteInCacheMode(() =>
+        {
+             var a = root.FindAllDescendants(condition);
+        }, message: "find directly");
+        ExecuteInCacheMode(() =>
+        {
+             var a = root.FindAllDescendants(condition);
+        }, message: "find directly with filter", treeFilter: condition);
         
         ExecuteInCacheMode(() =>
         {
@@ -239,20 +248,17 @@ class Program
 
     static double cacheWholeSearchTime = 0;
 
-    static CacheRequest ExecuteInCacheMode(Action action, CacheRequest cacheRequestA = null, string message = null)
+    static void ExecuteInCacheMode(Action action, ConditionBase treeFilter = null, string message = null)
     {
         var cacheWatch = Stopwatch.StartNew();
         CacheRequest cacheRequest;
-        if(cacheRequestA == null)
+        cacheRequest = new CacheRequest
         {
-            cacheRequest = new CacheRequest
-            {
-                TreeScope = TreeScope.Subtree,
-                AutomationElementMode = AutomationElementMode.Full
-            };
-        }
-        else
-            cacheRequest = cacheRequestA;
+            TreeScope = TreeScope.Subtree,
+            AutomationElementMode = AutomationElementMode.Full
+        };
+        if(treeFilter!= null)
+            cacheRequest.TreeFilter = treeFilter;
         
         cacheRequest.Add(automation.PropertyLibrary.Element.ProcessId);
         cacheRequest.Add(automation.PropertyLibrary.Element.RuntimeId);
@@ -268,8 +274,6 @@ class Program
         cacheWatch.Stop();
         cacheWholeSearchTime+=cacheWatch.Elapsed.TotalMilliseconds;
         Console.WriteLine($"[ExecuteInCacheMode] '{message}' completed. Time: {cacheWatch.Elapsed.TotalMilliseconds:F2}ms");
-
-        return cacheRequest;
     }
 
     static void FindInCache(AutomationElement cache, ConditionBase condition, List<AutomationElement> result)
