@@ -30,7 +30,7 @@ class Program
         var closeCondition = automation.ConditionFactory.ByControlType(ControlType.Button).And(automation.ConditionFactory.ByName("Close"));
         var a1Condition = automation.ConditionFactory.ByControlType(ControlType.DataItem).And(automation.ConditionFactory.ByAutomationId("A1"));
         var scrollBarCondition = automation.ConditionFactory.ByControlType(ControlType.ScrollBar).And(automation.ConditionFactory.ByClassName("NetUIScrollBar"));
-        var targetCondition = closeCondition;
+        var targetCondition = a1Condition;
 
         Console.WriteLine("\n=== HYBRID SEARCH ===");
         HybridSearchFind(mainWindow, targetCondition);
@@ -38,7 +38,6 @@ class Program
 
         Console.WriteLine("\n=== CACHED SEARCH ===");
         CachedSearch(mainWindow, targetCondition);
-        CachedSearch(mainWindow, targetCondition, true);
         Console.ReadLine();
 
         var convertedCondition = ConditionConverter.ToNative(automation, targetCondition);
@@ -193,44 +192,103 @@ class Program
         throw new Exception("oppa nihuya sebe! desktop proeban, parent == null");
     }
 
-    static List<AutomationElement> CachedSearch(AutomationElement root, ConditionBase condition, bool findAll = false)
+    static List<AutomationElement> CachedSearch(AutomationElement root, ConditionBase condition)
     {
-        var cacheRequest = new CacheRequest { TreeScope = TreeScope.Subtree };
+        var cacheRequest = new CacheRequest
+        {
+            TreeScope = TreeScope.Subtree,
+            AutomationElementMode = AutomationElementMode.Full
+        };
         cacheRequest.Add(automation.PropertyLibrary.Element.ProcessId);
         cacheRequest.Add(automation.PropertyLibrary.Element.RuntimeId);
         cacheRequest.Add(automation.PropertyLibrary.Element.Name);
         cacheRequest.Add(automation.PropertyLibrary.Element.ControlType);
         cacheRequest.Add(automation.PropertyLibrary.Element.AutomationId);
 
-        var matcher = new PropertyMatcher(condition);
-        var founds = new List<AutomationElement>();
-        var stopwatch = Stopwatch.StartNew();
-
-        using (cacheRequest.Activate())
+        AutomationElement mainWindowCached = null;
+        double wholeSearchTime=0;;
+        Stopwatch treeStopwatch = Stopwatch.StartNew();
+        int steps = 0;
+        using (cacheRequest. Activate())
         {
-            var window = root.FindFirst(TreeScope.Subtree, condition);
+            var founds = new List<AutomationElement>();
 
-            bool Search(AutomationElement node)
-            {
-                if (matcher.Matches(node))
-                {
-                    founds.Add(node);
-                    if (!findAll) return true;
-                }
-                foreach (var child in node.CachedChildren)
-                    if (Search(child)) return true;
-                return false;
-            }
+            var mainWindowCondition = automation.ConditionFactory
+            .ByControlType(ControlType.Window)
+            .And(automation.ConditionFactory
+                .ByName("Book1 - Excel")
+                .Or(automation.ConditionFactory
+                    .ByName("Excel")
+                    )
+                );
+            mainWindowCached = root.FindFirst(TreeScope.Subtree, mainWindowCondition);
+            steps++;
+            treeStopwatch.Stop();
+            wholeSearchTime+=treeStopwatch.Elapsed.TotalMilliseconds;
+            Console.WriteLine($"cached request in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
+           
+            treeStopwatch = Stopwatch.StartNew();
+            var treeOutput = new System.Text.StringBuilder();
+            PrintCachedTree(mainWindowCached, 0, treeOutput);
+            treeStopwatch.Stop();
+            wholeSearchTime+=treeStopwatch.Elapsed.TotalMilliseconds;
+            Console.WriteLine($"cached tree built in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
+            //Console.WriteLine(treeOutput.ToString());
+            Console.WriteLine($"cached tree built in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
+            Console.WriteLine($"===NODES COUNT = [{printCachedTreeSteps}]===");
 
-            Search(root);
+            var buildStopwatch = Stopwatch.StartNew();
+            var snapshot = BuildCachedNode(mainWindowCached, null);
+            buildStopwatch.Stop();
+            wholeSearchTime+=treeStopwatch.Elapsed.TotalMilliseconds;
+            Console.WriteLine($"cached node tree built in {buildStopwatch.Elapsed.TotalMilliseconds:F2}ms");
         }
 
-        stopwatch.Stop();
-        Console.WriteLine($"[{(findAll ? "FindAll" : "FindFirst")}] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms count={founds.Count}");
-        foreach (var (element, index) in founds.Select((element, index) => (element, index)))
-            Console.WriteLine($"[{index}] - {SafeName(element)} {SafeRunTimeId(element).ToFormattedString()}");
+        var result  = new List<AutomationElement>();
+        FindInCache(mainWindowCached, condition, result);
+        Leaderboard.ReportFindAll("[13] CachedSearch", wholeSearchTime, result.Count, 0);
 
-        return founds;
+        return result;
+    }
+
+    static void FindInCache(AutomationElement cache, ConditionBase condition, List<AutomationElement> result)
+    {
+        if(new PropertyMatcher(condition).Matches(cache)) result.Add(cache);
+
+        foreach (var child in cache.CachedChildren)
+        {
+            FindInCache(child, condition, result);
+        }
+    }
+
+    static CachedNode BuildCachedNode(AutomationElement element, CachedNode? parent)
+    {
+        var node = new CachedNode
+        {
+            Parent = parent,
+            Name = SafeName(element),
+            ProcessId = SafeProcessId(element),
+            RuntimeId = SafeRunTimeId(element)
+        };
+
+        foreach (var child in element.CachedChildren)
+            node.Children.Add(BuildCachedNode(child, node));
+
+        return node;
+    }
+
+    static int printCachedTreeSteps = 0;
+    static void PrintCachedTree(AutomationElement element, int depth, System.Text.StringBuilder output)
+    {
+        printCachedTreeSteps++;
+        var name = SafeName(element);
+        var processId = SafeProcessId(element);
+        var runtimeId = SafeRunTimeId(element).ToFormattedString();
+
+        output.AppendLine($"{new string(' ', depth * 2)}name='{name}' pid={processId} runtimeId={runtimeId}");
+
+        foreach (var child in element.CachedChildren)
+            PrintCachedTree(child, depth + 1, output);
     }
 
     static int[] SafeRunTimeId(AutomationElement element)
@@ -249,6 +307,15 @@ class Program
     {
         try { return element.Name; }
         catch { return null; }
+    }
+
+    public sealed class CachedNode
+    {
+        public CachedNode? Parent { get; set; }
+        public List<CachedNode> Children { get; } = new();
+        public object? Name { get; set; }
+        public int ProcessId { get; set; }
+        public int[] RuntimeId { get; set; } = [];
     }
 
     public async static Task NewEngine()
