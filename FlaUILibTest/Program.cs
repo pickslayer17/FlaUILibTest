@@ -96,7 +96,7 @@ class Program
         FlaUiSearch("[11] FlaUI GetCustomTreeWalker", automation.TreeWalkerFactory.GetCustomTreeWalker(targetCondition)).FindFirst(mainWindow);
         FlaUiSearch("[11] FlaUI GetCustomTreeWalker", automation.TreeWalkerFactory.GetCustomTreeWalker(targetCondition)).FindAll(mainWindow);
 
-        Leaderboard.PrintWinners();
+        Leaderboard.PrintResults();
 
         automation.Dispose();
     }
@@ -170,26 +170,39 @@ class Program
 
 public static class Leaderboard
 {
-    public static string FindFirstLabel = "";
-    public static double FindFirstTime = double.MaxValue;
-    public static string FindAllLabel = "";
-    public static double FindAllTime = double.MaxValue;
+    public static string FindFirstWinnerLabel = "";
+    public static double FindFirstWinnerTime = double.MaxValue;
+    public static string FindFirstLoserLabel = "";
+    public static double FindFirstLoserTime = double.MinValue;
+
+    public static string FindAllWinnerLabel = "";
+    public static double FindAllWinnerTime = double.MaxValue;
+    public static string FindAllLoserLabel = "";
+    public static double FindAllLoserTime = double.MinValue;
 
     public static void ReportFindFirst(string label, double time, bool found)
     {
-        if (found && time > 0 && time < FindFirstTime) { FindFirstTime = time; FindFirstLabel = label; }
+        if (!found || time <= 0) return;
+        if (time < FindFirstWinnerTime) { FindFirstWinnerTime = time; FindFirstWinnerLabel = label; }
+        if (time > FindFirstLoserTime) { FindFirstLoserTime = time; FindFirstLoserLabel = label; }
     }
 
     public static void ReportFindAll(string label, double time, int count)
     {
-        if (count > 0 && time > 0 && time < FindAllTime) { FindAllTime = time; FindAllLabel = label; }
+        if (count <= 0 || time <= 0) return;
+        if (time < FindAllWinnerTime) { FindAllWinnerTime = time; FindAllWinnerLabel = label; }
+        if (time > FindAllLoserTime) { FindAllLoserTime = time; FindAllLoserLabel = label; }
     }
 
-    public static void PrintWinners()
+    public static void PrintResults()
     {
         Console.WriteLine("\n========== WINNERS ==========");
-        Console.WriteLine($"FindFirst: {FindFirstLabel} ({FindFirstTime:F2}ms)");
-        Console.WriteLine($"FindAll:   {FindAllLabel} ({FindAllTime:F2}ms)");
+        Console.WriteLine($"FindFirst: {FindFirstWinnerLabel} ({FindFirstWinnerTime:F2}ms)");
+        Console.WriteLine($"FindAll:   {FindAllWinnerLabel} ({FindAllWinnerTime:F2}ms)");
+
+        Console.WriteLine("\n========== LOSERS ==========");
+        Console.WriteLine($"FindFirst: {FindFirstLoserLabel} ({FindFirstLoserTime:F2}ms)");
+        Console.WriteLine($"FindAll:   {FindAllLoserLabel} ({FindAllLoserTime:F2}ms)");
     }
 }
 
