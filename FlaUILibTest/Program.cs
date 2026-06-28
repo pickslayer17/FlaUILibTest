@@ -207,13 +207,12 @@ class Program
         var windowRuntimeId = SafeRunTimeId(root);
         var desktopRuntimeId = SafeRunTimeId(automation.GetDesktop());
         var windowProcessId = SafeProcessId(root);
-
-        using (cacheRequest.Activate())
+        Stopwatch treeStopwatch = Stopwatch.StartNew();
+        using (cacheRequest. Activate())
         {
-            var conditionWalker = automation.TreeWalkerFactory.GetCustomTreeWalker(condition);
+        
+            //var conditionWalker = automation.TreeWalkerFactory.GetCustomTreeWalker(condition);
             int stepsCount = 0;
-
-            var stopwatch = Stopwatch.StartNew();
 
             var founds = new List<AutomationElement>();
 
@@ -226,50 +225,61 @@ class Program
                     )
                 );
             var a = root.FindFirst(TreeScope.Subtree, mainWindowCondition);
-
-            var treeStopwatch = Stopwatch.StartNew();
+            treeStopwatch.Stop();
+            Console.WriteLine($"cached request in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
+           
+            treeStopwatch = Stopwatch.StartNew();
             var treeOutput = new System.Text.StringBuilder();
             PrintCachedTree(a, 0, treeOutput);
             treeStopwatch.Stop();
             Console.WriteLine($"cached tree built in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
-            Console.WriteLine(treeOutput.ToString());
-            Console.WriteLine($"cached tree built in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
-            Console.WriteLine($"===STEPS COUNT = [{printCachedTreeSteps}]===");
 
-            var node = conditionWalker.GetFirstChild(root);
-            stepsCount++;
-
-            if (findAll == false)
-            {
-                stopwatch.Stop();
-                Console.WriteLine($"[FindFirst] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms found={node != null} steps={stepsCount}");
-                Leaderboard.ReportFindFirst("[13] FlaUI HybridCached", stopwatch.Elapsed.TotalMilliseconds, node != null, stepsCount);
-                return new List<AutomationElement> { node };
-            }
-
-            while (node != null)
-            {
-                if (conditionWalker.GetFirstChild(node) != null) throw new Exception("oppa nihuya sebe!...");
-
-                if (!IsPresentInWindowCached(rawWalker, node, windowProcessId, windowRuntimeId, desktopRuntimeId, ref stepsCount)) break;
-
-                founds.Add(node);
-                node = conditionWalker.GetNextSibling(node);
-                stepsCount++;
-            }
-
-            stopwatch.Stop();
-
-            Console.WriteLine($"[FindAll] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms count={founds.Count} steps={stepsCount}");
-            foreach (var (element, index) in founds.Select((element, index) => (element, index)))
-                Console.WriteLine($"[{index}] - {SafeName(element)} {SafeRunTimeId(element).ToFormattedString()}");
-
-            Leaderboard.ReportFindAll("[13] FlaUI HybridCached", stopwatch.Elapsed.TotalMilliseconds, founds.Count, stepsCount);
-
-            return founds;
+            // Console.WriteLine($"cached tree built in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
+            // Console.WriteLine(treeOutput.ToString());
+            // Console.WriteLine($"cached tree built in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
+            // Console.WriteLine($"===STEPS COUNT = [{printCachedTreeSteps}]===");
         }
+       
+        treeStopwatch = Stopwatch.StartNew();
+        A1Cached.Click();
+        treeStopwatch.Stop();
+        Console.WriteLine($"UN cached element clicked in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
+        
+            // var node = conditionWalker.GetFirstChild(root);
+            // stepsCount++;
+
+            // if (findAll == false)
+            // {
+            //     stopwatch.Stop();
+            //     Console.WriteLine($"[FindFirst] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms found={node != null} steps={stepsCount}");
+            //     Leaderboard.ReportFindFirst("[13] FlaUI HybridCached", stopwatch.Elapsed.TotalMilliseconds, node != null, stepsCount);
+            //     return new List<AutomationElement> { node };
+            // }
+
+            // while (node != null)
+            // {
+            //     if (conditionWalker.GetFirstChild(node) != null) throw new Exception("oppa nihuya sebe!...");
+
+            //     if (!IsPresentInWindowCached(rawWalker, node, windowProcessId, windowRuntimeId, desktopRuntimeId, ref stepsCount)) break;
+
+            //     founds.Add(node);
+            //     node = conditionWalker.GetNextSibling(node);
+            //     stepsCount++;
+            // }
+
+            // stopwatch.Stop();
+
+            // Console.WriteLine($"[FindAll] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms count={founds.Count} steps={stepsCount}");
+            // foreach (var (element, index) in founds.Select((element, index) => (element, index)))
+            //     Console.WriteLine($"[{index}] - {SafeName(element)} {SafeRunTimeId(element).ToFormattedString()}");
+
+            // Leaderboard.ReportFindAll("[13] FlaUI HybridCached", stopwatch.Elapsed.TotalMilliseconds, founds.Count, stepsCount);
+
+            // return founds;
+        return null;
     }
 
+    static AutomationElement A1Cached;
     static int printCachedTreeSteps =0;
     static void PrintCachedTree(AutomationElement element, int depth, System.Text.StringBuilder output)
     {
@@ -277,6 +287,10 @@ class Program
         var name = SafeName(element);
         var processId = SafeProcessId(element);
         var runtimeId = SafeRunTimeId(element).ToFormattedString();
+
+
+        if((string)name == "\"A\" 1") A1Cached = element;
+
         output.AppendLine($"{new string(' ', depth * 2)}name='{name}' pid={processId} runtimeId={runtimeId}");
 
         foreach (var child in element.CachedChildren)
