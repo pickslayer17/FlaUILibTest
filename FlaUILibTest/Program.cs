@@ -1,5 +1,6 @@
 ﻿using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Capturing;
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.Identifiers;
@@ -28,11 +29,15 @@ class Program
         var closeCondition = automation.ConditionFactory.ByControlType(ControlType.Button).And(automation.ConditionFactory.ByName("Close"));
         var a1Condition = automation.ConditionFactory.ByControlType(ControlType.DataItem).And(automation.ConditionFactory.ByAutomationId("A1"));
         var scrollBarCondition = automation.ConditionFactory.ByControlType(ControlType.ScrollBar).And(automation.ConditionFactory.ByClassName("NetUIScrollBar"));
-        var targetCondition = a1Condition;
+        var targetCondition = closeCondition;
 
         Console.WriteLine("\n=== HYBRID SEARCH ===");
         HybridSearchFind(mainWindow, targetCondition);
         HybridSearchFind(mainWindow, targetCondition, true);
+
+        Console.WriteLine("\n=== HYBRID SEARCH CACHED ===");
+        HybridSearchFindCached(mainWindow, targetCondition);
+        HybridSearchFindCached(mainWindow, targetCondition, true);
         Console.ReadLine();
 
         var convertedCondition = ConditionConverter.ToNative(automation, targetCondition);
@@ -187,6 +192,105 @@ class Program
         throw new Exception("oppa nihuya sebe! desktop proeban, parent == null");
     }
 
+    static List<AutomationElement> HybridSearchFindCached(AutomationElement root, ConditionBase condition, bool findAll = false)
+    {
+        var cacheRequest = new CacheRequest
+        {
+            TreeScope = TreeScope.Subtree,
+            AutomationElementMode = AutomationElementMode.Full
+        };
+        cacheRequest.Add(automation.PropertyLibrary.Element.ProcessId);
+        cacheRequest.Add(automation.PropertyLibrary.Element.RuntimeId);
+        cacheRequest.Add(automation.PropertyLibrary.Element.Name);
+        var rawWalker = automation.TreeWalkerFactory.GetRawViewWalker();
+        var windowRuntimeId = SafeRunTimeId(root);
+        var desktopRuntimeId = SafeRunTimeId(automation.GetDesktop());
+        var windowProcessId = SafeProcessId(root);
+
+        using (cacheRequest.Activate())
+        {
+            var conditionWalker = automation.TreeWalkerFactory.GetCustomTreeWalker(condition);
+            int stepsCount = 0;
+
+            var stopwatch = Stopwatch.StartNew();
+
+            var founds = new List<AutomationElement>();
+
+            var mainWindowCondition = automation.ConditionFactory.ByControlType(ControlType.Window).And(automation.ConditionFactory.ByName("Excel"));
+            var a = root.FindFirst(TreeScope.Subtree, mainWindowCondition);
+            var b = a.Properties.RuntimeId;
+            var c = a.CachedChildren;
+
+            foreach(var child in c)
+            {
+                var childCildren = child.CachedChildren;
+            }
+
+
+            var node = conditionWalker.GetFirstChild(root);
+            stepsCount++;
+
+            if (findAll == false)
+            {
+                stopwatch.Stop();
+                Console.WriteLine($"[FindFirst] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms found={node != null} steps={stepsCount}");
+                Leaderboard.ReportFindFirst("[13] FlaUI HybridCached", stopwatch.Elapsed.TotalMilliseconds, node != null, stepsCount);
+                return new List<AutomationElement> { node };
+            }
+
+            while (node != null)
+            {
+                if (conditionWalker.GetFirstChild(node) != null) throw new Exception("oppa nihuya sebe!...");
+
+                if (!IsPresentInWindowCached(rawWalker, node, windowProcessId, windowRuntimeId, desktopRuntimeId, ref stepsCount)) break;
+
+                founds.Add(node);
+                node = conditionWalker.GetNextSibling(node);
+                stepsCount++;
+            }
+
+            stopwatch.Stop();
+
+            Console.WriteLine($"[FindAll] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms count={founds.Count} steps={stepsCount}");
+            foreach (var (element, index) in founds.Select((element, index) => (element, index)))
+                Console.WriteLine($"[{index}] - {SafeName(element)} {SafeRunTimeId(element).ToFormattedString()}");
+
+            Leaderboard.ReportFindAll("[13] FlaUI HybridCached", stopwatch.Elapsed.TotalMilliseconds, founds.Count, stepsCount);
+
+            return founds;
+        }
+    }
+
+    static bool IsPresentInWindowCached(ITreeWalker rawWalker, AutomationElement element, int windowProcessId, int[] windowRuntimeId, int[] desktopRuntimeId, ref int count)
+    {
+        var elementProcessId = SafeProcessId(element);
+        count++;
+        if (elementProcessId == 0) throw new Exception("oppa nihuya sebe! element bez ProcessId");
+        if (elementProcessId != windowProcessId) return false;
+
+        var parentCacheRequest = new CacheRequest
+        {
+            TreeScope = TreeScope.Parent,
+            AutomationElementMode = AutomationElementMode.Full
+        };
+        using (parentCacheRequest.Activate())
+        {
+            var parent = rawWalker.GetParent(element);
+            count++;
+            while (parent != null)
+            {
+                var parentRuntimeId = SafeRunTimeId(parent);
+                if (parentRuntimeId.SequenceEqual(windowRuntimeId)) return true;
+                if (parentRuntimeId.SequenceEqual(desktopRuntimeId)) return false;
+
+                parent = parent.CachedParent;
+                count++;
+            }
+        }
+
+        throw new Exception("oppa nihuya sebe! desktop proeban, parent == null");
+    }
+
     static int[] SafeRunTimeId(AutomationElement element)
     {
         try { return element.Properties.RuntimeId.Value; }
@@ -196,7 +300,7 @@ class Program
     static int SafeProcessId(AutomationElement element)
     {
         try { return element.Properties.ProcessId.Value; }
-        catch { throw new Exception("oppa nihuya sebe! element bez ProcessId"); }
+        catch(Exception ex) { throw new Exception("oppa nihuya sebe! element bez ProcessId", ex); }
     }
 
     static object? SafeName(AutomationElement element)
