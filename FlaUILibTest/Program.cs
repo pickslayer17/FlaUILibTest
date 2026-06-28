@@ -4,6 +4,7 @@ using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
 using FlaUI.Core.Identifiers;
 using FlaUI.UIA3;
+using FlaUI.UIA3.Converters;
 using System.Diagnostics;
 using UIDriver;
 class Program
@@ -15,33 +16,43 @@ class Program
         var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e") { WindowStyle = ProcessWindowStyle.Normal };
         processStartInfo.UseShellExecute = false;
         var application = Application.Launch(processStartInfo);
-        automation = new UIA3Automation();
+        automation = new UIA3Automation(); 
         var mainWindow = application.GetMainWindow(automation);
 
         Console.ReadLine();
 
         var found = FindFirstRecursion(automation, mainWindow, cf =>
-            cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")));
+            cf.ByControlType(ControlType.Button).And(cf.ByName("Close")));
 
         Console.WriteLine(found?.Name);
         Console.ReadLine();
 
-        var founds = FindAllRecursion(automation, mainWindow, cf =>
-            cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")));
+        //var founds = FindAllRecursion(automation, mainWindow, cf =>
+        //   cf.ByControlType(ControlType.Button).And(cf.ByName("Close")));
 
-        foreach (var (el, i) in founds.Select((el, i) => (el, i)))
-            Console.WriteLine($"[{i}] - {el.Name}");
+        //foreach (var (el, i) in founds.Select((el, i) => (el, i)))
+        //    Console.WriteLine($"[{i}] - {el.Name}");
 
-        Console.ReadLine();
+        //Console.ReadLine();
 
-        var foundsRaw = FindAllRecursionRaw(automation, mainWindow, cf =>
-            cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")));
+        //var foundsRaw = FindAllRecursionRaw(automation, mainWindow, cf =>
+        //     cf.ByControlType(ControlType.Button).And(cf.ByName("Close")));
 
-        foreach (var (el, i) in foundsRaw.Select((el, i) => (el, i)))
-            Console.WriteLine($"[{i}] - {el.Name}");
+        //foreach (var (el, i) in foundsRaw.Select((el, i) => (el, i)))
+        //    Console.WriteLine($"[{i}] - {TryGetName(el)}");
+
+        //Console.ReadLine();
+
+        FindAllNativeWalker(automation, mainWindow);
 
         Console.ReadLine();
         automation.Dispose();
+    }
+
+    static object? TryGetName(AutomationElement element)
+    {
+        try { return element.Name; }
+        catch { return null; }
     }
 
     static AutomationElement? FindFirstRecursion(UIA3Automation automation, AutomationElement root, Func<ConditionFactory, ConditionBase> condition)
@@ -79,13 +90,14 @@ class Program
     {
         var selfCondition = condition(automation.ConditionFactory);
         var walker = automation.TreeWalkerFactory.GetCustomTreeWalker(selfCondition);
+        var matcher = new PropertyMatcher(selfCondition);
         var founds = new List<AutomationElement>();
         var stepsCount = 0;
         var stopwatch = Stopwatch.StartNew();
 
         void Search(AutomationElement node)
         {
-            founds.Add(node);
+            if (matcher.Matches(node)) founds.Add(node);
 
             var child = walker.GetFirstChild(node);
             stepsCount++;
@@ -104,6 +116,98 @@ class Program
         return founds;
     }
 
+    static void FindAllNativeWalker(UIA3Automation automation, AutomationElement root)
+    {
+        var nativeAutomation = automation.NativeAutomation;
+        var nativeRoot = ((FlaUI.UIA3.UIA3FrameworkAutomationElement)root.FrameworkAutomationElement).NativeElement;
+
+        var selfCondition = automation.ConditionFactory.ByControlType(ControlType.Button).And(automation.ConditionFactory.ByName("Close"));
+        var convertedCondition = FlaUI.UIA3.Converters.ConditionConverter.ToNative(automation, selfCondition);
+
+        RunNativeWalk("RawViewCondition", nativeAutomation.RawViewCondition);
+        RunNativeWalk("ControlViewCondition", nativeAutomation.ControlViewCondition);
+        RunNativeWalk("ContentViewCondition", nativeAutomation.ContentViewCondition);
+        RunNativeWalk("ConvertedConditionBase", convertedCondition);
+        // RunWithRoundTrip("ConvertedConditionBase+RoundTrip", convertedCondition);
+
+        // Interop.UIAutomationClient.IUIAutomationElement RoundTrip(Interop.UIAutomationClient.IUIAutomationElement native)
+        //     => automation.WrapNativeElement(native).ToNative();
+
+        // void RunWithRoundTrip(string conditionName, Interop.UIAutomationClient.IUIAutomationCondition condition)
+        // {
+        //     var walker = nativeAutomation.CreateTreeWalker(condition);
+        //     var founds = new List<Interop.UIAutomationClient.IUIAutomationElement>();
+        //     var stepsCount = 0;
+        //     var stopwatch = Stopwatch.StartNew();
+
+        //     void Search(Interop.UIAutomationClient.IUIAutomationElement node)
+        //     {
+        //         if (node.CurrentControlType == 50000 && node.CurrentName == "Close")
+        //             founds.Add(node);
+
+        //         var child = walker.GetFirstChildElement(RoundTrip(node));
+        //         stepsCount++;
+        //         while (child != null)
+        //         {
+        //             Search(child);
+
+        //             child = walker.GetNextSiblingElement(RoundTrip(child));
+        //             stepsCount++;
+        //         }
+        //     }
+
+        //     Search(nativeRoot);
+        //     stopwatch.Stop();
+        //     Console.WriteLine($"[{conditionName}] steps={stepsCount} time={stopwatch.Elapsed.TotalMilliseconds:F2}ms count={founds.Count}");
+
+        //     foreach (var (el, i) in founds.Select((el, i) => (el, i)))
+        //         Console.WriteLine($"[{i}] - name={SafeName(el)} type={SafeType(el)}");
+        // }
+
+        void RunNativeWalk(string conditionName, Interop.UIAutomationClient.IUIAutomationCondition condition)
+        {
+            var walker = nativeAutomation.CreateTreeWalker(condition);
+            var founds = new List<Interop.UIAutomationClient.IUIAutomationElement>();
+            var stepsCount = 0;
+            var stopwatch = Stopwatch.StartNew();
+
+            void Search(Interop.UIAutomationClient.IUIAutomationElement node)
+            {
+                if (node.CurrentControlType == 50000 && node.CurrentName == "Close")
+                    founds.Add(node);
+
+                var child = walker.GetFirstChildElement(node);
+                stepsCount++;
+                while (child != null)
+                {
+                    Search(child);
+
+                    child = walker.GetNextSiblingElement(child);
+                    stepsCount++;
+                }
+            }
+
+            Search(nativeRoot);
+            stopwatch.Stop();
+            Console.WriteLine($"[{conditionName}] steps={stepsCount} time={stopwatch.Elapsed.TotalMilliseconds:F2}ms count={founds.Count}");
+
+            foreach (var (el, i) in founds.Select((el, i) => (el, i)))
+                Console.WriteLine($"[{i}] - name={SafeName(el)} type={SafeType(el)}");
+        }
+
+        static object? SafeName(Interop.UIAutomationClient.IUIAutomationElement element)
+        {
+            try { return element.CurrentName; }
+            catch { return null; }
+        }
+
+        static object? SafeType(Interop.UIAutomationClient.IUIAutomationElement element)
+        {
+            try { return element.CurrentControlType; }
+            catch { return null; }
+        }
+    }
+
     static List<AutomationElement> FindAllRecursionRaw(UIA3Automation automation, AutomationElement root, Func<ConditionFactory, ConditionBase> condition)
     {
         var selfCondition = condition(automation.ConditionFactory);
@@ -115,7 +219,8 @@ class Program
 
         void Search(AutomationElement node)
         {
-            if (matcher.Matches(node)) founds.Add(node);
+            if (matcher.Matches(node))
+                founds.Add(node);
 
             var child = walker.GetFirstChild(node);
             stepsCount++;
