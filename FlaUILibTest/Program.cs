@@ -5,6 +5,7 @@ using FlaUI.Core.Definitions;
 using FlaUI.Core.Identifiers;
 using FlaUI.UIA3;
 using FlaUI.UIA3.Converters;
+using FlaUILibTest.Extensions;
 using System.Diagnostics;
 using UIDriver;
 class Program
@@ -27,11 +28,25 @@ class Program
         var closeCondition = automation.ConditionFactory.ByControlType(ControlType.Button).And(automation.ConditionFactory.ByName("Close"));
         var a1Condition = automation.ConditionFactory.ByControlType(ControlType.DataItem).And(automation.ConditionFactory.ByAutomationId("A1"));
         var scrollBarCondition = automation.ConditionFactory.ByControlType(ControlType.ScrollBar).And(automation.ConditionFactory.ByClassName("NetUIScrollBar"));
-        var targetCondition = scrollBarCondition;
+        var targetCondition = a1Condition;
+
+        Console.WriteLine("\n=== HYBRID SEARCH ===");
+        HybridSearchFind(mainWindow, targetCondition);
+        HybridSearchFind(mainWindow, targetCondition, true);
+        Console.ReadLine();
 
         var convertedCondition = ConditionConverter.ToNative(automation, targetCondition);
         var nativeMatcher = new NativePropertyMatcher(targetCondition).Matches;
-        Func<Interop.UIAutomationClient.IUIAutomationElement, object?> describeNative = element => { try { return element.CurrentName; } catch { return null; } };
+        Func<Interop.UIAutomationClient.IUIAutomationElement, object?> describeNative = element => 
+        { 
+            string name = "";
+            bool? isEnabled = null;
+            try { name = element.CurrentName; } catch { name = "not supported";  }; 
+            try { isEnabled = element.CurrentIsEnabled != 0; } catch {  } 
+            var enabled = isEnabled.HasValue ? isEnabled.Value ? "true" : "false" : "not supported";
+
+            return $"name = '{name}'. isEnabled = '{enabled}'";
+        };
 
         TreeSearch<Interop.UIAutomationClient.IUIAutomationTreeWalker, Interop.UIAutomationClient.IUIAutomationElement> NativeSearch(string label, Interop.UIAutomationClient.IUIAutomationTreeWalker walker)
             => new(label, walker.GetFirstChildElement, walker.GetNextSiblingElement, nativeMatcher, describeNative);
@@ -103,6 +118,93 @@ class Program
         automation.Dispose();
     }
 
+    static List<AutomationElement> HybridSearchFind(AutomationElement root, ConditionBase condition, bool findAll = false)
+    {
+        var conditionWalker = automation.TreeWalkerFactory.GetCustomTreeWalker(condition);
+        var rawWalker = automation.TreeWalkerFactory.GetRawViewWalker();
+        var windowRuntimeId = SafeRunTimeId(root);
+        var desktopRuntimeId = SafeRunTimeId(automation.GetDesktop());
+        var windowProcessId = SafeProcessId(root);
+        int stepsCount = 0;
+
+        var stopwatch = Stopwatch.StartNew();
+
+        var founds = new List<AutomationElement>();
+        var node = conditionWalker.GetFirstChild(root);
+        stepsCount++;
+
+        if(findAll == false)
+        {
+            stopwatch.Stop();
+            Console.WriteLine($"[FindFirst] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms found={node != null} steps={stepsCount}");
+            
+            Leaderboard.ReportFindFirst("[12] FlaUI HybridTreeWalker", stopwatch.Elapsed.TotalMilliseconds, node != null, stepsCount);
+            return new List<AutomationElement> {node};
+        }
+
+        while (node != null)
+        {
+            // stepsCount++; because its just a check
+            if (conditionWalker.GetFirstChild(node) != null) throw new Exception("oppa nihuya sebe!...");
+
+            if (!IsPresentInWindow(rawWalker, node, windowProcessId, windowRuntimeId, desktopRuntimeId, ref stepsCount)) break;
+
+            founds.Add(node);
+            node = conditionWalker.GetNextSibling(node);
+            stepsCount++;
+        }
+
+        stopwatch.Stop();
+
+        Console.WriteLine($"[FindAll] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms count={founds.Count} steps={stepsCount}");
+        foreach (var (element, index) in founds.Select((element, index) => (element, index)))
+            Console.WriteLine($"[{index}] - {SafeName(element)} {SafeRunTimeId(element).ToFormattedString()}");
+
+        Leaderboard.ReportFindAll("[12] FlaUI HybridTreeWalker", stopwatch.Elapsed.TotalMilliseconds, founds.Count, stepsCount);
+
+        return founds;
+    }
+
+    static bool IsPresentInWindow(ITreeWalker rawWalker, AutomationElement element, int windowProcessId, int[] windowRuntimeId, int[] desktopRuntimeId, ref int count)
+    {
+        var elementProcessId = SafeProcessId(element);
+        count++;
+        if(elementProcessId == 0)  throw new Exception("oppa nihuya sebe! element bez ProcessId");
+        if (elementProcessId != windowProcessId) return false;
+
+        var parent = rawWalker.GetParent(element);
+        count++;
+        while (parent != null)
+        {
+            var parentRuntimeId = SafeRunTimeId(parent);
+            if (parentRuntimeId.SequenceEqual(windowRuntimeId)) return true;
+            if (parentRuntimeId.SequenceEqual(desktopRuntimeId)) return false;
+
+            parent = rawWalker.GetParent(parent);
+            count++;
+        }
+
+        throw new Exception("oppa nihuya sebe! desktop proeban, parent == null");
+    }
+
+    static int[] SafeRunTimeId(AutomationElement element)
+    {
+        try { return element.Properties.RuntimeId.Value; }
+        catch { return new int[0]; }
+    }
+
+    static int SafeProcessId(AutomationElement element)
+    {
+        try { return element.Properties.ProcessId.Value; }
+        catch { throw new Exception("oppa nihuya sebe! element bez ProcessId"); }
+    }
+
+    static object? SafeName(AutomationElement element)
+    {
+        try { return element.Name; }
+        catch { return null; }
+    }
+
     public async static Task NewEngine()
     {
         var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
@@ -172,17 +274,17 @@ class Program
 
 public static class Leaderboard
 {
-    private static readonly List<(string Label, double Time, int Count)> _findFirst = new();
-    private static readonly List<(string Label, double Time, int Count)> _findAll = new();
+    private static readonly List<(string Label, double Time, int Count, int steps)> _findFirst = new();
+    private static readonly List<(string Label, double Time, int Count, int steps)> _findAll = new();
 
-    public static void ReportFindFirst(string label, double time, bool found)
+    public static void ReportFindFirst(string label, double time, bool found, int steps)
     {
-        _findFirst.Add((label, time, found ? 1 : 0));
+        _findFirst.Add((label, time, found ? 1 : 0, steps));
     }
 
-    public static void ReportFindAll(string label, double time, int count)
+    public static void ReportFindAll(string label, double time, int count, int steps)
     {
-        _findAll.Add((label, time, count));
+        _findAll.Add((label, time, count, steps));
     }
 
     public static void PrintResults()
@@ -191,14 +293,14 @@ public static class Leaderboard
         Print("FindAll", _findAll);
     }
 
-    private static void Print(string title, List<(string Label, double Time, int Count)> results)
+    private static void Print(string title, List<(string Label, double Time, int Count, int steps)> results)
     {
         var sorted = results.OrderBy(result => result.Count == 0).ThenBy(result => result.Time).ToList();
         var labelWidth = sorted.Count == 0 ? 0 : sorted.Max(result => result.Label.Length);
 
         Console.WriteLine($"\n========== {title} ==========");
         foreach (var (item, rank) in sorted.Select((item, index) => (item, index + 1)))
-            Console.WriteLine($"[{rank,2}]  {item.Label.PadRight(labelWidth)}  {item.Time,8:F2}ms  count={item.Count}");
+            Console.WriteLine($"[{rank,2}]  {item.Label.PadRight(labelWidth)}  {item.Time,8:F2}ms  count={item.Count}, steps = {item.steps}");
     }
 }
 
@@ -250,7 +352,7 @@ public sealed class TreeSearch<TWalker, TElement> where TElement : class
         stopwatch.Stop();
         Console.WriteLine($"[FindFirst] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms found={result != null} steps={stepsCount}");
         if (result != null) Console.WriteLine(_describe(result));
-        Leaderboard.ReportFindFirst(_label, stopwatch.Elapsed.TotalMilliseconds, result != null);
+        Leaderboard.ReportFindFirst(_label, stopwatch.Elapsed.TotalMilliseconds, result != null, stepsCount);
         return result;
     }
 
@@ -280,7 +382,7 @@ public sealed class TreeSearch<TWalker, TElement> where TElement : class
         Console.WriteLine($"[FindAll] time={stopwatch.Elapsed.TotalMilliseconds:F2}ms count={founds.Count} steps={stepsCount}");
         foreach (var (element, index) in founds.Select((element, index) => (element, index)))
             Console.WriteLine($"[{index}] - {_describe(element)}");
-        Leaderboard.ReportFindAll(_label, stopwatch.Elapsed.TotalMilliseconds, founds.Count);
+        Leaderboard.ReportFindAll(_label, stopwatch.Elapsed.TotalMilliseconds, founds.Count, stepsCount);
         return founds;
     }
 }
