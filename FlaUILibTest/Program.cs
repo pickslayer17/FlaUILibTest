@@ -8,6 +8,7 @@ using FlaUI.UIA3;
 using FlaUI.UIA3.Converters;
 using FlaUILibTest.Extensions;
 using System.Diagnostics;
+using System.Runtime.ConstrainedExecution;
 using UIDriver;
 class Program
 {
@@ -21,8 +22,8 @@ class Program
         automation = new UIA3Automation();
         var mainWindow = application.GetMainWindow(automation);
 
-        Console.ReadLine();
         
+        Console.WriteLine("\n=== press key ===");
 
         var nativeAutomation = automation.NativeAutomation;
         var nativeRoot = ((UIA3FrameworkAutomationElement)mainWindow.FrameworkAutomationElement).NativeElement;
@@ -30,15 +31,16 @@ class Program
         var closeCondition = automation.ConditionFactory.ByControlType(ControlType.Button).And(automation.ConditionFactory.ByName("Close"));
         var a1Condition = automation.ConditionFactory.ByControlType(ControlType.DataItem).And(automation.ConditionFactory.ByAutomationId("A1"));
         var scrollBarCondition = automation.ConditionFactory.ByControlType(ControlType.ScrollBar).And(automation.ConditionFactory.ByClassName("NetUIScrollBar"));
-        var targetCondition = a1Condition;
+        var targetCondition = closeCondition;
 
+        Console.ReadLine();
+        Console.WriteLine("\n=== CACHED SEARCH ===");
+        CachedSearch(mainWindow, targetCondition);
+        
+        Console.ReadLine();
         Console.WriteLine("\n=== HYBRID SEARCH ===");
         HybridSearchFind(mainWindow, targetCondition);
         HybridSearchFind(mainWindow, targetCondition, true);
-
-        Console.WriteLine("\n=== CACHED SEARCH ===");
-        CachedSearch(mainWindow, targetCondition);
-        Console.ReadLine();
 
         var convertedCondition = ConditionConverter.ToNative(automation, targetCondition);
         var nativeMatcher = new NativePropertyMatcher(targetCondition).Matches;
@@ -194,61 +196,80 @@ class Program
 
     static List<AutomationElement> CachedSearch(AutomationElement root, ConditionBase condition)
     {
-        var cacheRequest = new CacheRequest
+        AutomationElement mainWindowCached = null;
+        var mainWindowCondition = automation.ConditionFactory
+        .ByControlType(ControlType.Window)
+        .And(automation.ConditionFactory
+            .ByName("Book1 - Excel")
+            .Or(automation.ConditionFactory
+                .ByClassName("XLMAIN")	
+                )
+            );
+          
+        var request = ExecuteInCacheMode(() =>
         {
-            TreeScope = TreeScope.Subtree,
-            AutomationElementMode = AutomationElementMode.Full
-        };
+             mainWindowCached = root.FindFirst(TreeScope.Subtree, mainWindowCondition);
+        }, message: "Request of cashed window");
+        
+        ExecuteInCacheMode(() =>
+        {
+            var treeOutput = new System.Text.StringBuilder();
+             PrintCachedTree(mainWindowCached, 0, treeOutput);
+             //System.Console.WriteLine(treeOutput);
+             Console.WriteLine($"===NODES COUNT = [{printCachedTreeSteps}]===");
+        }, message: "Cached tree built");
+
+        ExecuteInCacheMode(() =>
+        {
+             var snapshot = BuildCachedNode(mainWindowCached, null);
+        }, message: "cached node tree built");
+        
+
+        var result  = new List<AutomationElement>();
+        ExecuteInCacheMode(() =>
+        {
+             FindInCache(mainWindowCached, condition, result);
+        }, message: "Find in cache");
+        
+        System.Console.WriteLine($"Whole time in for cache actions: {cacheWholeSearchTime:f2}ms");
+        Leaderboard.ReportFindAll("[13] CachedSearch", cacheWholeSearchTime, result.Count, 0);
+
+        return result;
+    }
+
+    static double cacheWholeSearchTime = 0;
+
+    static CacheRequest ExecuteInCacheMode(Action action, CacheRequest cacheRequestA = null, string message = null)
+    {
+        var cacheWatch = Stopwatch.StartNew();
+        CacheRequest cacheRequest;
+        if(cacheRequestA == null)
+        {
+            cacheRequest = new CacheRequest
+            {
+                TreeScope = TreeScope.Subtree,
+                AutomationElementMode = AutomationElementMode.Full
+            };
+        }
+        else
+            cacheRequest = cacheRequestA;
+        
         cacheRequest.Add(automation.PropertyLibrary.Element.ProcessId);
         cacheRequest.Add(automation.PropertyLibrary.Element.RuntimeId);
         cacheRequest.Add(automation.PropertyLibrary.Element.Name);
         cacheRequest.Add(automation.PropertyLibrary.Element.ControlType);
         cacheRequest.Add(automation.PropertyLibrary.Element.AutomationId);
 
-        AutomationElement mainWindowCached = null;
-        double wholeSearchTime=0;;
-        Stopwatch treeStopwatch = Stopwatch.StartNew();
-        int steps = 0;
-        using (cacheRequest. Activate())
+        using (cacheRequest.Activate())
         {
-            var founds = new List<AutomationElement>();
-
-            var mainWindowCondition = automation.ConditionFactory
-            .ByControlType(ControlType.Window)
-            .And(automation.ConditionFactory
-                .ByName("Book1 - Excel")
-                .Or(automation.ConditionFactory
-                    .ByName("Excel")
-                    )
-                );
-            mainWindowCached = root.FindFirst(TreeScope.Subtree, mainWindowCondition);
-            steps++;
-            treeStopwatch.Stop();
-            wholeSearchTime+=treeStopwatch.Elapsed.TotalMilliseconds;
-            Console.WriteLine($"cached request in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
-           
-            treeStopwatch = Stopwatch.StartNew();
-            var treeOutput = new System.Text.StringBuilder();
-            PrintCachedTree(mainWindowCached, 0, treeOutput);
-            treeStopwatch.Stop();
-            wholeSearchTime+=treeStopwatch.Elapsed.TotalMilliseconds;
-            Console.WriteLine($"cached tree built in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
-            //Console.WriteLine(treeOutput.ToString());
-            Console.WriteLine($"cached tree built in {treeStopwatch.Elapsed.TotalMilliseconds:F2}ms");
-            Console.WriteLine($"===NODES COUNT = [{printCachedTreeSteps}]===");
-
-            var buildStopwatch = Stopwatch.StartNew();
-            var snapshot = BuildCachedNode(mainWindowCached, null);
-            buildStopwatch.Stop();
-            wholeSearchTime+=treeStopwatch.Elapsed.TotalMilliseconds;
-            Console.WriteLine($"cached node tree built in {buildStopwatch.Elapsed.TotalMilliseconds:F2}ms");
+            action.Invoke();
         }
+      
+        cacheWatch.Stop();
+        cacheWholeSearchTime+=cacheWatch.Elapsed.TotalMilliseconds;
+        Console.WriteLine($"[ExecuteInCacheMode] '{message}' completed. Time: {cacheWatch.Elapsed.TotalMilliseconds:F2}ms");
 
-        var result  = new List<AutomationElement>();
-        FindInCache(mainWindowCached, condition, result);
-        Leaderboard.ReportFindAll("[13] CachedSearch", wholeSearchTime, result.Count, 0);
-
-        return result;
+        return cacheRequest;
     }
 
     static void FindInCache(AutomationElement cache, ConditionBase condition, List<AutomationElement> result)
