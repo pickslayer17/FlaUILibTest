@@ -1,6 +1,7 @@
 using FlaUI.Core.Definitions;
+using FlaUI.Core.Identifiers;
 
-class UiNode
+public class UiNode
 {
     public UiNode Parent;
     public UiNode[] Children;
@@ -9,4 +10,28 @@ class UiNode
     public string Name;
     public string ClassName;
     public string AutomationId;
+
+    public string GetPropertyValue(PropertyId propertyId)
+    {
+        var propName = propertyId.Name;
+
+        switch (propName)
+        {
+            case nameof(Name):
+                return Name;
+
+            case nameof(ClassName):
+                return ClassName;
+
+            case nameof(AutomationId):
+                return AutomationId;
+
+            case nameof(ControlType):
+                return ControlType.ToString();   // или .ToString() если enum
+
+            default:
+                return null;   // или string.Empty
+        }
+        
+    }
 }

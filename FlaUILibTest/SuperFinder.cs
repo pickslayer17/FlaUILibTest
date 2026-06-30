@@ -1,5 +1,6 @@
 using UIDriver;
 using FlaUI.Core.Conditions;
+using FlaUILibTest;
 
 class SuperFinder
 {
@@ -12,8 +13,24 @@ class SuperFinder
         _walker = walker;
     }
 
-    static UiNode FindFirst(UiNode root, ConditionBase condition) => null;
-    static bool CheckProperty(UiNode node, ConditionBase condition) => false;
+    static UiNode FindFirst(UiNode root, ConditionBase condition)
+    {
+        var children = root.Children;
+        if(children == null) return null;
+        foreach (var child in children)
+        {
+            if(CheckProperty(child, condition)) return child;
+
+            return FindFirst(child, condition);
+        }
+
+        return null;
+    }
+
+    static bool CheckProperty(UiNode node, ConditionBase condition)
+    {
+        return new UiNodePropMatcher(condition).Matches(node);
+    }
 
     public UiNode Find(BY targetBy)
     {
