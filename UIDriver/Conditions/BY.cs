@@ -15,7 +15,7 @@ public sealed class BY
 
     public ConditionBase? Root { get; init; }
     public BY? AncestorOrParent { get; init; }
-    public bool IsParent { get; init; }
+    public bool IsChild { get; init; }
     public BY[]? PreviousSiblings { get; init; }
     public BY[]? Previous { get; init; }
     public ConditionBase? SelfCondition { get; init; }
@@ -23,7 +23,7 @@ public sealed class BY
     public BY[]? Following { get; init; }
     public BY[]? Children { get; init; }
     public BY[]? Descendants { get; init; }
-    public int? Index { get; init; }
+    public int? SiblingIndex { get; init; }
 
     public TimeSpan Timeout { get; init; } = TimeSpan.FromSeconds(15);
 }

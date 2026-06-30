@@ -13,7 +13,7 @@ public static class FinderFactory
         // this logic not implemented at all. and that the most interesting part - we will talk about it later
         if (by.AncestorOrParent != null)
         {
-            if (by.IsParent)
+            if (by.IsChild)
             {
 
             }
