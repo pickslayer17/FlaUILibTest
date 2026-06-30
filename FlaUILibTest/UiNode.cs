@@ -11,7 +11,7 @@ public class UiNode
     public string ClassName;
     public string AutomationId;
 
-    public string GetPropertyValue(PropertyId propertyId)
+    public object GetPropertyValue(PropertyId propertyId)
     {
         var propName = propertyId.Name;
 
@@ -27,7 +27,7 @@ public class UiNode
                 return AutomationId;
 
             case nameof(ControlType):
-                return ControlType.ToString();   // или .ToString() если enum
+                return ControlType;   // или .ToString() если enum
 
             default:
                 return null;   // или string.Empty

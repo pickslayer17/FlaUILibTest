@@ -21,7 +21,7 @@ class Program
         automation = new UIA3Automation();
         var cf = automation.ConditionFactory;
         
-        UiNode desktop = TestTree.Build();
+        
 
         var excelMain = new BY
         {
@@ -51,7 +51,7 @@ class Program
             },
         };
 
-
+        UiNode desktop = TestTree.Build();
         var walker = new UiNodeWalker();
         var finder = new SuperFinder(desktop, walker);
         var finalElement = finder.Find(testBy);

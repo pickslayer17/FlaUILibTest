@@ -28,7 +28,8 @@ public sealed class UiNodePropMatcher
     private bool PropertyMatches(UiNode element, PropertyCondition propertyCondition)
     {
         var actual = GetPropertyValue(element, propertyCondition.Property);
-        return EqualityComparer<object?>.Default.Equals(actual, propertyCondition.Value);
+        var result = EqualityComparer<object?>.Default.Equals(actual, propertyCondition.Value);
+        return result;
     }
 
     private object? GetPropertyValue(UiNode element, PropertyId propertyId)

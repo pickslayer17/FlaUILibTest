@@ -13,23 +13,32 @@ class SuperFinder
         _walker = walker;
     }
 
-    static UiNode FindFirst(UiNode root, ConditionBase condition)
+    public UiNode FindFirst(UiNode root, ConditionBase condition)
     {
-        var children = root.Children;
-        if(children == null) return null;
-        foreach (var child in children)
-        {
-            if(CheckProperty(child, condition)) return child;
+        if (root == null) return null;
 
-            return FindFirst(child, condition);
+        // Проверяем саму ноду
+        if (CheckProperty(root, condition))
+            return root;
+
+        // Обходим всех детей
+        var child = _walker.MoveFirstChild(root);
+        while (child != null)
+        {
+            var found = FindFirst(child, condition);
+            if (found != null)
+                return found;
+
+            child = _walker.MoveNextSibling(child);
         }
 
         return null;
     }
 
-    static bool CheckProperty(UiNode node, ConditionBase condition)
+    public bool CheckProperty(UiNode node, ConditionBase condition)
     {
-        return new UiNodePropMatcher(condition).Matches(node);
+        var result = new UiNodePropMatcher(condition).Matches(node);
+        return result;
     }
 
     public UiNode Find(BY targetBy)
@@ -297,7 +306,7 @@ class SuperFinder
         return null;
     }
 
-    static Stack<BY> BuildStepStack(BY by, out WindowScope scope)
+    Stack<BY> BuildStepStack(BY by, out WindowScope scope)
     {
         var stepStack = new Stack<BY>();
         var current = by;
