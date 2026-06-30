@@ -11,14 +11,16 @@ public static class FinderFactory
 
 
         // this logic not implemented at all. and that the most interesting part - we will talk about it later
-        if (by.Parent != null)
+        if (by.AncestorOrParent != null)
         {
-            
-        }
+            if (by.IsParent)
+            {
 
-        if (by.Ancestor != null)
-        {
-            new AncestorFinder(finder);
+            }
+            else
+            {
+                new AncestorFinder(finder);
+            }
         }
         if (by.Children != null)
         {

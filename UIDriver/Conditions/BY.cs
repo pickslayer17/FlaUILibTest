@@ -14,8 +14,8 @@ public sealed class BY
     public WindowScope Scope { get; init; } = WindowScope.Default;
 
     public ConditionBase? Root { get; init; }
-    public BY? Ancestor { get; init; }
-    public BY? Parent { get; init; }
+    public BY? AncestorOrParent { get; init; }
+    public bool IsParent { get; init; }
     public BY[]? PreviousSiblings { get; init; }
     public BY[]? Previous { get; init; }
     public ConditionBase? SelfCondition { get; init; }

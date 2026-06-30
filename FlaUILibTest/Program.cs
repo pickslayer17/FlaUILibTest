@@ -14,8 +14,130 @@ class Program
 {
     static UIA3Automation automation = null!;
 
+
+
+
+    static AutomationElement FindWithBY(BY by, AutomationElement root, bool noParents = false)
+    {
+        //going up
+        // if(!noParents)
+        // {
+            Stack<BY> ancestors = new Stack<BY>();
+            ancestors.Push(by);
+            BY ancestorOrParent = by;
+            
+            while(ancestorOrParent.AncestorOrParent != null)
+            {
+                ancestors.Push(ancestorOrParent);
+                ancestorOrParent = ancestorOrParent.AncestorOrParent;
+            }
+        
+            var ancestorOrParentElement = FindFirstDescendant(root, ancestorOrParent.SelfCondition);
+        // }
+        //going down
+        if(ancestorOrParentElement != null)
+        {
+            var siblingsOk = CheckSiblings(ancestorOrParentElement, ancestorOrParent);
+            var descendantsOk = CheckDescendants(ancestorOrParentElement, ancestorOrParent);
+            if(siblingsOk)
+            {
+                var followingAncestorBy = ancestors.Pop();
+                if(followingAncestorBy != null)
+                {
+                    var followingAncestorElement = FindWithBY(followingAncestorBy, ancestorOrParentElement);
+                }
+                return ancestorOrParentElement;
+            }
+        }
+
+        return null;
+    }
+
+    static bool CheckDescendants(AutomationElement element, BY by)
+    {
+        foreach(var descendant in by.Descendants)
+        {
+            var descendantElement = FindWithBY( descendant, element, noParents: true);
+            if(descendantElement == null) 
+                return false;
+        }
+
+        return true;
+    }
+
+    static bool CheckSiblings(AutomationElement element, BY by)
+    {
+        foreach(var followingSibling in by.FollowingSiblings)
+        {
+            var followingSiblingElement = FindFollowingSibling(element, followingSibling.SelfCondition);
+            if(followingSiblingElement == null) 
+                return false;
+        }
+
+        return true;
+    }
+
+
+    static AutomationElement FindFollowingSibling(AutomationElement from, ConditionBase condition)
+    {
+        //immitating walking on siblings
+        return (AutomationElement)new Object();
+    }
+
+    static AutomationElement FindFirstDescendant(AutomationElement source, ConditionBase condition)
+    {
+        //immitating using source and condition and propertymatcher work
+        return (AutomationElement)new Object();
+    }
+
+    static bool CheckCOndition(AutomationElement source, ConditionBase condition)
+    {
+        //immitating propertymatcher work
+        return false;
+    }
+
+
+
     static async Task Main()
     {
+        automation = new UIA3Automation();
+        var cf = automation.ConditionFactory;
+        
+        var testBy = new BY
+        {
+            SelfCondition = cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")),
+            FollowingSiblings = new[]
+            {
+                new BY { SelfCondition = cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("B1")) }
+            },
+           
+            IsParent = true,
+            AncestorOrParent = new BY
+            {
+                SelfCondition = cf.ByControlType(ControlType.Pane).And(cf.ByAutomationId("SheetContentPane")),
+                IsParent = false,
+                AncestorOrParent = new BY
+                {
+                    Scope = WindowScope.Desktop,
+                    SelfCondition = cf.ByControlType(ControlType.Window)
+                        .And(cf.ByClassName("XLMAIN"))
+                        .And(cf.ByName("Book1 - Excel"))
+                }
+            }
+        };
+
+
+        var a = FindWithBY(testBy, automation.GetDesktop());
+
+
+
+
+
+
+
+
+
+
         var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e") { WindowStyle = ProcessWindowStyle.Normal };
         processStartInfo.UseShellExecute = false;
         var application = Application.Launch(processStartInfo);
@@ -380,7 +502,8 @@ class Program
         var okButtonInFormatCellsBY = new BY 
         {
             SelfCondition = condFact.ByControlType(ControlType.Button).And(condFact.ByName("OK")),
-            Parent = new BY 
+            IsParent = true,
+            AncestorOrParent = new BY
             {
                 Scope = WindowScope.Desktop,
                 SelfCondition = condFact.ByControlType(ControlType.Window).And(condFact.ByName("Format Cells"))
