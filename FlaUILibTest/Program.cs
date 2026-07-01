@@ -10,7 +10,90 @@ using FlaUILibTest.Extensions;
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.ConstrainedExecution;
+using System.Xml;
+using System.Xml.XPath;
 using UIDriver;
+
+class UiNodeNavigator : System.Xml.XPath.XPathNavigator
+{
+    public override string BaseURI => throw new NotImplementedException();
+
+    public override bool IsEmptyElement => throw new NotImplementedException();
+
+    public override string LocalName => throw new NotImplementedException();
+
+    public override string Name => throw new NotImplementedException();
+
+    public override string NamespaceURI => throw new NotImplementedException();
+
+    public override XmlNameTable NameTable => throw new NotImplementedException();
+
+    public override XPathNodeType NodeType => throw new NotImplementedException();
+
+    public override string Prefix => throw new NotImplementedException();
+
+    public override string Value => throw new NotImplementedException();
+
+    public override XPathNavigator Clone()
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool IsSamePosition(XPathNavigator other)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool MoveTo(XPathNavigator other)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool MoveToFirstAttribute()
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool MoveToFirstChild()
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool MoveToId(string id)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool MoveToNext()
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool MoveToNextAttribute()
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool MoveToNextNamespace(XPathNamespaceScope namespaceScope)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool MoveToParent()
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool MoveToPrevious()
+    {
+        throw new NotImplementedException();
+    }
+}
 
 class Program
 {
@@ -23,7 +106,7 @@ class Program
         
         
 
-        var excelMain = new BY
+        var excelMainBy = new BY
         {
             IsChild = true,
             Scope = WindowScope.Desktop,
@@ -32,29 +115,57 @@ class Program
                 .And(cf.ByName("Book1 - Excel")),
         };
 
-        var sheetContentPane = new BY
+        var sheetWindowBy = new BY
         {
             IsChild = false,
-            AncestorOrParent = excelMain,
-            SelfCondition = cf.ByControlType(ControlType.Pane).And(cf.ByAutomationId("SheetContentPane")),
-            
+            AncestorOrParent = excelMainBy,
+            SelfCondition = cf.ByControlType(ControlType.Window).And(cf.ByClassName("EXCEL7")),
         };
 
-        var testBy = new BY
-        {   
-            IsChild = false,
-            AncestorOrParent = sheetContentPane,
+        var sheetContentPaneBy = new BY
+        {
+            IsChild = true,
+            AncestorOrParent = sheetWindowBy,
+            SelfCondition = cf.ByControlType(ControlType.Pane).And(cf.ByAutomationId("SheetContentPane")),
+        };
+
+        var gridPaneBy = new BY
+        {
+            IsChild = true,
+            AncestorOrParent = sheetContentPaneBy,
+            SelfCondition = cf.ByControlType(ControlType.Pane).And(cf.ByAutomationId("GridPane")),
+        };
+
+        var previousSiblingA1By = new BY
+        {
             SelfCondition = cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")),
+        };
+
+        var followingSiblingC1By = new BY
+        {
+            SelfCondition = cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("C1")),
             FollowingSiblings = new[]
             {
-                new BY { SelfCondition = cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("B1")) }
+                new BY { SelfCondition = cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("D1")) }
             },
         };
+
+        var targetB1By = new BY
+        {
+            IsChild = true,
+            AncestorOrParent = gridPaneBy,
+            SelfCondition = cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("B1")).And(cf.ByName("B1")),
+            PreviousSiblings = new[] { previousSiblingA1By },
+            FollowingSiblings = new[] { followingSiblingC1By },
+        };
+
+        var testBy = targetB1By;
 
         UiNode desktop = TestTree.Build();
         var walker = new UiNodeWalker();
         var finder = new SuperFinder(desktop, walker);
         var finalElement = finder.Find(testBy);
+        Console.WriteLine($"finalElement className = '{finalElement?.ClassName ?? "null"}'");
 
 
 
@@ -82,7 +193,8 @@ class Program
 
         Console.ReadLine();
         Console.WriteLine("\n=== CACHED SEARCH ===");
-        CachedSearch(mainWindow, targetCondition);
+        CachedSearch(mainWindow, targetCondition, out var mainWindowCached);
+        var uiNodeTree = BuildUINodeTree(mainWindowCached, null);
         
         Console.ReadLine();
         Console.WriteLine("\n=== HYBRID SEARCH ===");
@@ -241,7 +353,7 @@ class Program
         throw new Exception("oppa nihuya sebe! desktop proeban, parent == null");
     }
 
-    static List<AutomationElement> CachedSearch(AutomationElement root, ConditionBase condition)
+    static List<AutomationElement> CachedSearch(AutomationElement root, ConditionBase condition, out AutomationElement mainWindowCachedOut)
     {
         AutomationElement mainWindowCached = null;
         var mainWindowCondition = automation.ConditionFactory
@@ -304,7 +416,39 @@ class Program
         System.Console.WriteLine($"Whole time in for cache actions: {cacheWholeSearchTime:f2}ms");
         Leaderboard.ReportFindAll("[13] CachedSearch", cacheWholeSearchTime, result.Count, 0);
 
+        mainWindowCachedOut = mainWindowCached;
         return result;
+    }
+
+    static UiNode BuildUINodeTree(AutomationElement element, UiNode parent)
+    {
+        var node = new UiNode
+        {
+            Parent = parent,
+            ControlType = element.ControlType,
+            Name = SafeName(element)?.ToString(),
+            ClassName = SafeClassName(element),
+            AutomationId = SafeAutomationId(element)
+        };
+
+        var children = new List<UiNode>();
+        foreach (var child in element.CachedChildren)
+            children.Add(BuildUINodeTree(child, node));
+
+        node.Children = children.ToArray();
+        return node;
+    }
+
+    static string SafeClassName(AutomationElement element)
+    {
+        try { return element.ClassName; }
+        catch { return null; }
+    }
+
+    static string SafeAutomationId(AutomationElement element)
+    {
+        try { return element.AutomationId; }
+        catch { return null; }
     }
 
     static double cacheWholeSearchTime = 0;
@@ -330,6 +474,7 @@ class Program
             cacheRequest.Add(automation.PropertyLibrary.Element.Name);
             cacheRequest.Add(automation.PropertyLibrary.Element.ControlType);
             cacheRequest.Add(automation.PropertyLibrary.Element.AutomationId);
+            cacheRequest.Add(automation.PropertyLibrary.Element.ClassName);
         using( cacheRequest.Activate())
         {
              action.Invoke();

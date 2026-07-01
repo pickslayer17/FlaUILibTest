@@ -13,26 +13,35 @@ class SuperFinder
         _walker = walker;
     }
 
-    public UiNode FindFirst(UiNode root, ConditionBase condition)
+    public IEnumerable<UiNode> FindAll(UiNode root, ConditionBase condition)
     {
-        if (root == null) return null;
+        if (root == null) yield break;
 
-        // Проверяем саму ноду
         if (CheckProperty(root, condition))
-            return root;
+            yield return root;
 
-        // Обходим всех детей
         var child = _walker.MoveFirstChild(root);
         while (child != null)
         {
-            var found = FindFirst(child, condition);
-            if (found != null)
-                return found;
+            foreach (var found in FindAll(child, condition))
+                yield return found;
 
             child = _walker.MoveNextSibling(child);
         }
+    }
 
-        return null;
+    public IEnumerable<UiNode> FindChildren(UiNode root, ConditionBase condition)
+    {
+        if (root == null) yield break;
+
+        var child = _walker.MoveFirstChild(root);
+        while (child != null)
+        {
+            if (CheckProperty(child, condition))
+                yield return child;
+
+            child = _walker.MoveNextSibling(child);
+        }
     }
 
     public bool CheckProperty(UiNode node, ConditionBase condition)
@@ -62,24 +71,20 @@ class SuperFinder
             return source;
 
         // real search from root by conditions. e.g. recurscive going down and checking selfCondition with each element until its not equals.
-        var found = stepBy.IsChild ? FindFirst(source, stepBy.SelfCondition) : FindFirst(source, stepBy.SelfCondition);
+        var candidates = stepBy.IsChild ? FindChildren(source, stepBy.SelfCondition) : FindAll(source, stepBy.SelfCondition);
         // self conditions are fine. It's time to check whether his all relative conditions are ok.
-        if (found != null)
+        foreach (var found in candidates)
         {
             var relationsOk = CheckRelations(found, stepBy);
             if (relationsOk)
             {
-                return Search(found, stepStack);
-            }
-            else
-            {
-                return null;
+                var deeper = Search(found, stepStack);
+                if (deeper != null)
+                    return deeper;
             }
         }
-        else
-        {
-            return null;
-        }
+
+        return null;
     }
 
     // checking all except SelfConditions. If anything is false - return false and break whole search
@@ -155,11 +160,13 @@ class SuperFinder
     bool CheckPreviousSibling(UiNode element, BY previousSiblingBy)
     {
         var previousSibling = _walker.MovePrevSibling(element);
-        if (previousSibling != null)
+        while (previousSibling != null)
         {
             var elementFits = CheckElement(previousSibling, previousSiblingBy);
             if (elementFits)
                 return true;
+
+            previousSibling = _walker.MovePrevSibling(previousSibling);
         }
         return false;
     }
@@ -167,11 +174,13 @@ class SuperFinder
     bool CheckFollowingSibling(UiNode element, BY followingSiblingBy)
     {
         var followingSibling = _walker.MoveNextSibling(element);
-        if (followingSibling != null)
+        while (followingSibling != null)
         {
             var elementFits = CheckElement(followingSibling, followingSiblingBy);
             if (elementFits)
                 return true;
+
+            followingSibling = _walker.MoveNextSibling(followingSibling);
         }
         return false;
     }
