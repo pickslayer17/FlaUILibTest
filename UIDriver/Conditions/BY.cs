@@ -16,8 +16,8 @@ public sealed class BY
     public ConditionBase? Root { get; init; }
     public BY? AncestorOrParent { get; init; }
     public bool IsChild { get; init; }
-    public BY[]? PreviousSiblings { get; init; }
-    public BY[]? Previous { get; init; }
+    public BY[]? PrecedingSiblings { get; init; }
+    public BY[]? Preceding { get; init; }
     public ConditionBase? SelfCondition { get; init; }
     public BY[]? FollowingSiblings { get; init; }
     public BY[]? Following { get; init; }

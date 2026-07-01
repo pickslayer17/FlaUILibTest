@@ -38,11 +38,11 @@ public static class FinderFactory
         {
 
         }
-        if (by.Previous != null)
+        if (by.Preceding != null)
         {
 
         }
-        if (by.PreviousSiblings != null)
+        if (by.PrecedingSiblings != null)
         {
 
         }

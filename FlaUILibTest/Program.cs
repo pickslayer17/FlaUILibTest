@@ -157,7 +157,7 @@ class Program
             SelfCondition = cf.ByControlType(ControlType.Pane).And(cf.ByAutomationId("GridPane")),
         };
 
-        var previousSiblingA1By = new BY
+        var precedingSiblingA1By = new BY
         {
             SelfCondition = cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")),
         };
@@ -176,7 +176,7 @@ class Program
             IsChild = true,
             AncestorOrParent = gridPaneBy,
             SelfCondition = cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("B1")).And(cf.ByName("B1")),
-            PreviousSiblings = new[] { previousSiblingA1By },
+            PrecedingSiblings = new[] { precedingSiblingA1By },
             FollowingSiblings = new[] { followingSiblingC1By },
         };
 

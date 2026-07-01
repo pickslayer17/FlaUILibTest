@@ -93,9 +93,9 @@ class SuperFinder
     {
         if (!CheckSiblingIndex(element, by)) return false;
 
-        foreach (var previousSiblingBy in by.PreviousSiblings ?? [])
+        foreach (var precedingSiblingBy in by.PrecedingSiblings ?? [])
         {
-            if (!CheckPreviousSibling(element, previousSiblingBy)) return false;
+            if (!CheckPrecedingSibling(element, precedingSiblingBy)) return false;
         }
 
         foreach (var followingSiblingBy in by.FollowingSiblings ?? [])
@@ -118,9 +118,9 @@ class SuperFinder
             if (!CheckFollowing(element, followingBy)) return false;
         }
 
-        foreach (var previousBy in by.Previous ?? [])
+        foreach (var precedingBy in by.Preceding ?? [])
         {
-            if (!CheckPrevious(element, previousBy)) return false;
+            if (!CheckPreceding(element, precedingBy)) return false;
         }
 
         return true;
@@ -157,16 +157,16 @@ class SuperFinder
         return previousSibling == null && siblingIndex == 0;
     }
 
-    bool CheckPreviousSibling(UiNode element, BY previousSiblingBy)
+    bool CheckPrecedingSibling(UiNode element, BY precedingSiblingBy)
     {
-        var previousSibling = _walker.MovePrevSibling(element);
-        while (previousSibling != null)
+        var precedingSibling = _walker.MovePrevSibling(element);
+        while (precedingSibling != null)
         {
-            var elementFits = CheckElement(previousSibling, previousSiblingBy);
+            var elementFits = CheckElement(precedingSibling, precedingSiblingBy);
             if (elementFits)
                 return true;
 
-            previousSibling = _walker.MovePrevSibling(previousSibling);
+            precedingSibling = _walker.MovePrevSibling(precedingSibling);
         }
         return false;
     }
@@ -251,24 +251,24 @@ class SuperFinder
     }
 
     // seems like the same mechanism as above,
-    bool CheckPrevious(UiNode element, BY previousBy)
+    bool CheckPreceding(UiNode element, BY precedingBy)
     {
         UiNode found = null;
 
-        var previous = _walker.MovePrevSibling(element);
-        while (previous != null)
+        var preceding = _walker.MovePrevSibling(element);
+        while (preceding != null)
         {
-            if (previous != null)
+            if (preceding != null)
             {
                 // sibling is a part of 'following' , so check it as well
-                if (CheckElement(previous, previousBy)) return true;
+                if (CheckElement(preceding, precedingBy)) return true;
 
                 // while we still inside siblings - perform without parent realtions
-                found = SearchSingleStep(previous, previousBy);
+                found = SearchSingleStep(preceding, precedingBy);
                 if (found != null)
                     return true;
 
-                previous = _walker.MovePrevSibling(previous);
+                preceding = _walker.MovePrevSibling(preceding);
             }
         }
 
@@ -281,7 +281,7 @@ class SuperFinder
         if (parentPreviousSibling == null)
             return false;
 
-        found = SearchFromRoot(parentPreviousSibling, previousBy);
+        found = SearchFromRoot(parentPreviousSibling, precedingBy);
 
         return found != null;
     }
