@@ -16,79 +16,100 @@ using UIDriver;
 
 class UiNodeNavigator : System.Xml.XPath.XPathNavigator
 {
+    // BaseURI XML-документа. У дерева в памяти его нет. Вернуть string.Empty.
     public override string BaseURI => throw new NotImplementedException();
 
+    // Пустой ли элемент (<foo/>). Всегда false — у тебя обычные узлы.
     public override bool IsEmptyElement => throw new NotImplementedException();
 
+    // Имя тега без namespace. Твой _current.ControlType.ToString(). По нему матчится //DataItem.
     public override string LocalName => throw new NotImplementedException();
 
+    // Полное имя тега (с префиксом). Префиксов нет — вернуть то же, что LocalName.
     public override string Name => throw new NotImplementedException();
 
+    // URI namespace текущего узла. Namespace не используешь. Вернуть string.Empty.
     public override string NamespaceURI => throw new NotImplementedException();
 
+    // Пул интернированных строк имён. НЕ заглушка — вернуть настоящий new NameTable() (один на навигатор). На нём же ломается contains(), если оставить пустым.
     public override XmlNameTable NameTable => throw new NotImplementedException();
 
+    // Тип узла: Element для обычного, Root когда стоишь на корне (_current == _root). По этому движок понимает, что перед ним элемент.
     public override XPathNodeType NodeType => throw new NotImplementedException();
 
+    // Префикс namespace ("ns:foo" -> "ns"). Нет префиксов. Вернуть string.Empty.
     public override string Prefix => throw new NotImplementedException();
 
+    // Текстовое содержимое узла (для XPath-функции string()). Можно string.Empty или _current.Name.
     public override string Value => throw new NotImplementedException();
 
+    // Копия навигатора на ТОМ ЖЕ узле. Движок клонирует постоянно, чтобы ветвить обход. Вернуть new UiNodeNavigator с тем же _current/_root/_walker.
     public override XPathNavigator Clone()
     {
         throw new NotImplementedException();
     }
 
+    // Стоят ли этот и other на одном узле. На TestTree — ReferenceEquals(_current, ((UiNodeNavigator)other)._current). В бою — по RuntimeId.
     public override bool IsSamePosition(XPathNavigator other)
     {
         throw new NotImplementedException();
     }
 
+    // Перепрыгнуть свой курсор на позицию other. Если other — мой тип: _current = его._current, true. Иначе false.
     public override bool MoveTo(XPathNavigator other)
     {
         throw new NotImplementedException();
     }
 
+    // Встать на первый атрибут для итерации @*. Атрибуты как узлы не перечисляешь -> false. (На матчинг [@x='y'] не влияет, тот идёт через GetAttribute.)
     public override bool MoveToFirstAttribute()
     {
         throw new NotImplementedException();
     }
 
+    // Шаг вниз к первому ребёнку. _walker.MoveFirstChild(_current): не null -> _current = child, true; иначе false (курсор не двигать).
     public override bool MoveToFirstChild()
     {
         throw new NotImplementedException();
     }
 
+    // Встать на первое объявление namespace. Нет namespace -> false.
     public override bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope)
     {
         throw new NotImplementedException();
     }
 
+    // Прыжок по id() из DTD. Нет таблицы id -> false.
     public override bool MoveToId(string id)
     {
         throw new NotImplementedException();
     }
 
+    // Шаг вправо к следующему брату. _walker.MoveNextSibling(_current): не null -> _current = sib, true; иначе false.
     public override bool MoveToNext()
     {
         throw new NotImplementedException();
     }
 
+    // Следующий атрибут при итерации. Не перечисляешь -> false.
     public override bool MoveToNextAttribute()
     {
         throw new NotImplementedException();
     }
 
+    // Следующее объявление namespace. Нет -> false.
     public override bool MoveToNextNamespace(XPathNamespaceScope namespaceScope)
     {
         throw new NotImplementedException();
     }
 
+    // Шаг вверх к родителю. _walker.MoveParent(_current): не null -> _current = parent, true; иначе false (уже на корне).
     public override bool MoveToParent()
     {
         throw new NotImplementedException();
     }
 
+    // Шаг влево к предыдущему брату. _walker.MovePrevSibling(_current): не null -> _current = sib, true; иначе false.
     public override bool MoveToPrevious()
     {
         throw new NotImplementedException();
@@ -104,7 +125,7 @@ class Program
         automation = new UIA3Automation();
         var cf = automation.ConditionFactory;
         
-        
+
 
         var excelMainBy = new BY
         {
@@ -167,8 +188,11 @@ class Program
         var finalElement = finder.Find(testBy);
         Console.WriteLine($"finalElement className = '{finalElement?.ClassName ?? "null"}'");
 
+        Console.WriteLine("\n=== UiNode TREE ===");
+        PrintUiNodeTree(desktop, 0);
 
 
+        
 
 
 
@@ -511,6 +535,17 @@ class Program
             node.Children.Add(BuildCachedNode(child, node));
 
         return node;
+    }
+
+    static void PrintUiNodeTree(UiNode node, int depth)
+    {
+        if (node == null) return;
+
+        var marker = node.ClassName == "target" ? "  <<<<< TARGET" : "";
+        Console.WriteLine($"{new string(' ', depth * 2)}[{node.ControlType}] name='{node.Name}' automationId='{node.AutomationId}' className='{node.ClassName}'{marker}");
+
+        foreach (var child in node.Children ?? [])
+            PrintUiNodeTree(child, depth + 1);
     }
 
     static int printCachedTreeSteps = 0;
