@@ -122,6 +122,7 @@ class Program
 
     static async Task Main()
     {
+        //await NewEngine();
         automation = new UIA3Automation();
         var cf = automation.ConditionFactory;
         
@@ -601,7 +602,22 @@ class Program
         LogEventHandler.Subscribe(new ConsoleLogger());
         driver.Launch(processStartInfo);
         var elementFromDrvier = driver.Locator(cf => cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")));
+        Console.ReadLine();
         await elementFromDrvier.ClickAsync();
+
+
+
+        var buttonFileTab = driver.Locator(cf => cf.ByControlType(ControlType.Button)
+        .And(cf.ByAutomationId("FileTabButton")));
+        await buttonFileTab.ClickAsync();
+
+        var backButton = driver.Locator(cf => cf.ByControlType(ControlType.ListItem)
+        .And(cf.ByName("Back")));
+        await backButton.ClickAsync();
+
+        elementFromDrvier = driver.Locator(cf => cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("B1")));
+        await elementFromDrvier.ClickAsync();
+        Console.ReadLine();
 
         ConditionFactory condFact = driver.ConditionFactory;
         var okButtonInFormatCellsBY = new BY 
