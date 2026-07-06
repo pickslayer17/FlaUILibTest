@@ -115,7 +115,6 @@ class UiNodeNavigator : System.Xml.XPath.XPathNavigator
 
     public override bool MoveToFirstAttribute()
     {
-        
         if (IsInAttribute)
         {
             return false;
@@ -386,6 +385,8 @@ class Program
             "//DataItem[@AutomationId='B1' and @Name='B1']" +
             "[preceding-sibling::DataItem[@AutomationId='A1']]" +
             "[following-sibling::DataItem[@AutomationId='C1'][following-sibling::DataItem[@AutomationId='D1']]]");
+        Probe(desktop, walker,
+            "//*[starts-with(@ClassName, 'r')][last()]");
 
 
         
