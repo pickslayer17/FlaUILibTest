@@ -16,108 +16,289 @@ using UIDriver;
 
 class UiNodeNavigator : System.Xml.XPath.XPathNavigator
 {
+    private const int NoAttributeValue = -1;
+    UiNode _currentElement;
+    readonly UiNode _rootElement;
+    readonly UiNodeWalker _walker;
+    readonly XmlNameTable _nameTable;
+    private int _attributeIndex = NoAttributeValue;
+
+    public UiNodeNavigator(UiNode root, UiNodeWalker walker)
+    {
+        _rootElement = root;
+        _currentElement = root;
+        _walker = walker;
+        _nameTable = new NameTable();
+    }
+
+    UiNodeNavigator(UiNodeNavigator source)
+    {
+        _rootElement = source._rootElement;
+        _currentElement = source._currentElement;
+        _walker = source._walker;
+        _attributeIndex = source._attributeIndex;
+        _nameTable = source._nameTable;
+    }
+
+    private bool IsInAttribute => _attributeIndex != NoAttributeValue;
+
+        /// <inheritdoc />
+    public override bool HasAttributes => !IsInAttribute;
+
+    /// <inheritdoc />
+    public override string Value => IsInAttribute ? GetAttributeValue(_attributeIndex) : _currentElement.Name?? string.Empty;
+
+    public override object UnderlyingObject => _currentElement;
+
+    public UiNode Current => _currentElement;
+
     // BaseURI XML-документа. У дерева в памяти его нет. Вернуть string.Empty.
-    public override string BaseURI => throw new NotImplementedException();
+    public override string BaseURI => string.Empty;
 
     // Пустой ли элемент (<foo/>). Всегда false — у тебя обычные узлы.
-    public override bool IsEmptyElement => throw new NotImplementedException();
+    public override bool IsEmptyElement => false;
 
-    // Имя тега без namespace. Твой _current.ControlType.ToString(). По нему матчится //DataItem.
-    public override string LocalName => throw new NotImplementedException();
+    public override string LocalName
+        {
+            get
+            {
+                if (IsInAttribute)
+                {
+                    return GetAttributeName(_attributeIndex);
+                }
+                // Map unknown types to custom so they are at least findable
+                var controlType = _currentElement.ControlType;
+                    // ? _currentElement.Properties.ControlType.Value
+                    // : ControlType.Custom;
+                return controlType.ToString();
+            }
+        }
 
     // Полное имя тега (с префиксом). Префиксов нет — вернуть то же, что LocalName.
-    public override string Name => throw new NotImplementedException();
+    public override string Name => LocalName;
 
     // URI namespace текущего узла. Namespace не используешь. Вернуть string.Empty.
-    public override string NamespaceURI => throw new NotImplementedException();
+    public override string NamespaceURI => string.Empty;
 
     // Пул интернированных строк имён. НЕ заглушка — вернуть настоящий new NameTable() (один на навигатор). На нём же ломается contains(), если оставить пустым.
-    public override XmlNameTable NameTable => throw new NotImplementedException();
+    public override XmlNameTable NameTable => _nameTable;
 
     // Тип узла: Element для обычного, Root когда стоишь на корне (_current == _root). По этому движок понимает, что перед ним элемент.
-    public override XPathNodeType NodeType => throw new NotImplementedException();
+    public override XPathNodeType NodeType 
+    {
+        get
+        {
+            if (IsInAttribute)
+            {
+                return XPathNodeType.Attribute;
+            }
+            if (_currentElement.Equals(_rootElement))
+            {
+                return XPathNodeType.Root;
+            }
+            return XPathNodeType.Element;
+        }
+    }
 
     // Префикс namespace ("ns:foo" -> "ns"). Нет префиксов. Вернуть string.Empty.
-    public override string Prefix => throw new NotImplementedException();
+    public override string Prefix => string.Empty;
 
-    // Текстовое содержимое узла (для XPath-функции string()). Можно string.Empty или _current.Name.
-    public override string Value => throw new NotImplementedException();
+    // Читает свойство узла как атрибут: [@AutomationId='B1'] и т.п. Без него все предикаты [@...] пустые.
+    public override string GetAttribute(string localName, string namespaceURI) => localName switch
+    {
+        "AutomationId" => _currentElement.AutomationId ?? string.Empty,
+        "ClassName" => _currentElement.ClassName ?? string.Empty,
+        "Name" => _currentElement.Name ?? string.Empty,
+        "ControlType" => _currentElement.ControlType.ToString(),
+        _ => string.Empty
+    };
+
+    public override bool MoveToFirstAttribute()
+    {
+        
+        if (IsInAttribute)
+        {
+            return false;
+        }
+        _attributeIndex = 0;
+        return true;
+    }
+
+    public override bool MoveToNextAttribute()
+    {
+        if (_attributeIndex >= Enum.GetNames(typeof(ElementAttributes)).Length - 1)
+        {
+            return false;
+        }
+        if (!IsInAttribute)
+        {
+            return false;
+        }
+        _attributeIndex++;
+        return true;
+    }
+
+    public override bool MoveToAttribute(string localName, string namespaceUri)
+    {
+        if (IsInAttribute)
+        {
+            return false;
+        }
+        var attributeIndex = GetAttributeIndexFromName(localName);
+        if (attributeIndex != NoAttributeValue)
+        {
+            _attributeIndex = attributeIndex;
+            return true;
+        }
+        return false;
+    }
+
+    private string GetAttributeValue(int attributeIndex) => attributeIndex switch
+    {
+        0 => _currentElement.Name ?? string.Empty,
+        1 => _currentElement.ClassName ?? string.Empty,
+        2 => _currentElement.AutomationId ?? string.Empty,
+        _ => string.Empty
+    };
+
+     private string GetAttributeName(int attributeIndex)
+    {
+        var name = Enum.GetName(typeof(ElementAttributes), attributeIndex);
+        if (name == null)
+        {
+            throw new ArgumentOutOfRangeException(nameof(attributeIndex));
+        }
+        return name;
+    }
+
+    private int GetAttributeIndexFromName(string attributeName)
+    {
+#if NET35
+        if (EnumExtensions.TryParse(attributeName, out ElementAttributes parsedValue))
+#else
+        if (Enum.TryParse(attributeName, out ElementAttributes parsedValue))
+#endif
+        {
+            return (int)parsedValue;
+        }
+        return NoAttributeValue;
+    }
 
     // Копия навигатора на ТОМ ЖЕ узле. Движок клонирует постоянно, чтобы ветвить обход. Вернуть new UiNodeNavigator с тем же _current/_root/_walker.
-    public override XPathNavigator Clone()
-    {
-        throw new NotImplementedException();
-    }
+    public override XPathNavigator Clone() => new UiNodeNavigator(this);
 
     // Стоят ли этот и other на одном узле. На TestTree — ReferenceEquals(_current, ((UiNodeNavigator)other)._current). В бою — по RuntimeId.
     public override bool IsSamePosition(XPathNavigator other)
-    {
-        throw new NotImplementedException();
-    }
+        => other is UiNodeNavigator navigator && ReferenceEquals(_currentElement, navigator._currentElement);
 
     // Перепрыгнуть свой курсор на позицию other. Если other — мой тип: _current = его._current, true. Иначе false.
     public override bool MoveTo(XPathNavigator other)
     {
-        throw new NotImplementedException();
-    }
-
-    // Встать на первый атрибут для итерации @*. Атрибуты как узлы не перечисляешь -> false. (На матчинг [@x='y'] не влияет, тот идёт через GetAttribute.)
-    public override bool MoveToFirstAttribute()
-    {
-        throw new NotImplementedException();
+        var specificNavigator = other as UiNodeNavigator;
+            if (specificNavigator == null)
+            {
+                return false;
+            }
+            if (!_rootElement.Equals(specificNavigator._rootElement))
+            {
+                return false;
+            }
+            _currentElement = specificNavigator._currentElement;
+            _attributeIndex = specificNavigator._attributeIndex;
+            return true;
     }
 
     // Шаг вниз к первому ребёнку. _walker.MoveFirstChild(_current): не null -> _current = child, true; иначе false (курсор не двигать).
-    public override bool MoveToFirstChild()
-    {
-        throw new NotImplementedException();
-    }
-
-    // Встать на первое объявление namespace. Нет namespace -> false.
-    public override bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope)
-    {
-        throw new NotImplementedException();
-    }
-
+    
+    
     // Прыжок по id() из DTD. Нет таблицы id -> false.
-    public override bool MoveToId(string id)
-    {
-        throw new NotImplementedException();
-    }
+    public override bool MoveToId(string id) => false;
 
-    // Шаг вправо к следующему брату. _walker.MoveNextSibling(_current): не null -> _current = sib, true; иначе false.
+    public override void MoveToRoot()
+    {
+        _attributeIndex = NoAttributeValue;
+        _currentElement = _rootElement;
+    }
     public override bool MoveToNext()
     {
-        throw new NotImplementedException();
+        if (IsInAttribute) { return false; }
+        var sibling = _walker.MoveNextSibling(_currentElement);
+        if (sibling == null) return false;
+        _currentElement = sibling;
+        return true;
     }
 
-    // Следующий атрибут при итерации. Не перечисляешь -> false.
-    public override bool MoveToNextAttribute()
-    {
-        throw new NotImplementedException();
-    }
-
-    // Следующее объявление namespace. Нет -> false.
-    public override bool MoveToNextNamespace(XPathNamespaceScope namespaceScope)
-    {
-        throw new NotImplementedException();
-    }
-
-    // Шаг вверх к родителю. _walker.MoveParent(_current): не null -> _current = parent, true; иначе false (уже на корне).
-    public override bool MoveToParent()
-    {
-        throw new NotImplementedException();
-    }
-
-    // Шаг влево к предыдущему брату. _walker.MovePrevSibling(_current): не null -> _current = sib, true; иначе false.
     public override bool MoveToPrevious()
     {
-        throw new NotImplementedException();
+         if (IsInAttribute) { return false; }
+        if (_currentElement.Parent == null) return false;
+        var sibling = _walker.MovePrevSibling(_currentElement);
+        if (sibling == null) return false;
+        _currentElement = sibling;
+        return true;
     }
+
+    public override bool MoveToFirstChild()
+    {
+        if (IsInAttribute) { return false; }
+        var child = _walker.MoveFirstChild(_currentElement);
+        if (child == null) return false;
+        _currentElement = child;
+        return true;
+    }
+
+    public override bool MoveToParent()
+    {
+        if (IsInAttribute)
+        {
+            _attributeIndex = NoAttributeValue;
+            return true;
+        }
+        var parent = _walker.MoveParent(_currentElement);
+        if (parent == null) return false;
+        _currentElement = parent;
+        return true;
+    }
+
+    public override bool MoveToFirstNamespace(XPathNamespaceScope namespaceScope) => throw new NotImplementedException();
+    public override bool MoveToNextNamespace(XPathNamespaceScope namespaceScope) => throw new NotImplementedException();
+
+}
+
+public enum ElementAttributes
+{
+    Name,
+    ClassName,
+    AutomationId    
 }
 
 class Program
 {
+    static void Probe(UiNode root, UiNodeWalker walker, string xpath)
+    {
+        try
+        {
+            var navigator = new UiNodeNavigator(root, walker);
+            var iterator = navigator.Select(xpath);
+            var count = 0;
+            var first = "";
+            while (iterator.MoveNext())
+            {
+                count++;
+                if (count == 1)
+                {
+                    var node = ((UiNodeNavigator)iterator.Current).Current;
+                    first = $"[{node.ControlType}] id='{node.AutomationId}' class='{node.ClassName}'";
+                }
+            }
+            Console.WriteLine($"count={count,3}  first={first,-55}  <- {xpath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"THROW {ex.GetType().Name}: {ex.Message}  <- {xpath}");
+        }
+    }
+
     static UIA3Automation automation = null!;
 
     static async Task Main()
@@ -187,10 +368,24 @@ class Program
         var walker = new UiNodeWalker();
         var finder = new SuperFinder(desktop, walker);
         var finalElement = finder.Find(testBy);
-        Console.WriteLine($"finalElement className = '{finalElement?.ClassName ?? "null"}'");
+        
 
         Console.WriteLine("\n=== UiNode TREE ===");
         PrintUiNodeTree(desktop, 0);
+
+        Console.WriteLine($"finalElement className = '{finalElement?.ClassName ?? "null"}'");
+
+        Console.WriteLine("\n=== XPATH NAVIGATOR ===");
+        Probe(desktop, walker, "/");
+        Probe(desktop, walker, "//*");
+        Probe(desktop, walker, "//DataItem");
+        Probe(desktop, walker, "//DataItem[@AutomationId='B1']");
+        Probe(desktop, walker, "//DataItem[@AutomationId='B1' and @Name='B1']");
+        Probe(desktop, walker, "//DataItem[@AutomationId='B1'][preceding-sibling::DataItem[@AutomationId='A1']]");
+        Probe(desktop, walker,
+            "//DataItem[@AutomationId='B1' and @Name='B1']" +
+            "[preceding-sibling::DataItem[@AutomationId='A1']]" +
+            "[following-sibling::DataItem[@AutomationId='C1'][following-sibling::DataItem[@AutomationId='D1']]]");
 
 
         

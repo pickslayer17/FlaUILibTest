@@ -57,11 +57,11 @@ static class TestTree
         var decoyA1 = Node(ControlType.DataItem, automationId: "A1", name: "A1");
         var decoyA2 = Node(ControlType.DataItem, automationId: "A2", name: "A2");
         var decoyA3 = Node(ControlType.DataItem, automationId: "A3", name: "A3");
-        var decoyB2 = Node(ControlType.DataItem, automationId: "B1", name: "B1");
+        var decoyB2 = Node(ControlType.DataItem, automationId: "B1", name: "B1", className: " real target");
         var decoyC3 = Node(ControlType.DataItem, automationId: "C1", name: "C1");
 
         var targetA1 = Node(ControlType.DataItem, automationId: "A1", name: "A1");
-        var targetB1 = Node(ControlType.DataItem, automationId: "B1", name: "B1", className: "target");
+        var targetB1 = Node(ControlType.DataItem, automationId: "B1", name: "B1", className: "false target");
         var targetC1 = Node(ControlType.DataItem, automationId: "C1", name: "C1");
         var targetD1 = Node(ControlType.DataItem, automationId: "D1", name: "D1");
 
