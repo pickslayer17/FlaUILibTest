@@ -34,20 +34,23 @@ class Program
         };
 
         var nativeCacheManager = new NativeCacheManager(automation);
+        var treeFilter = automation.CreatePropertyCondition(UIA_ControlTypePropertyId, 50029);
         var stopwatch = Stopwatch.StartNew();
-        var result = nativeCacheManager.Find(root, windowCondition, propertyIds);
+        var result = nativeCacheManager.Find(window, windowCondition, propertyIds, treeFilter);
         stopwatch.Stop();
         Console.WriteLine($"Cached search time = {stopwatch.Elapsed.TotalMilliseconds:F2}ms");
+        var cachedItemCount = result.Length;
+        var cachedWindow = result.GetElement(0);
 
         var a1condition = automation.CreatePropertyCondition(UIA_AutomationIdPropertyId, "A1");
-        var cachedWindow = result.GetElement(0);
-        while(true)
-        {
-            var a1Cell = cachedWindow.FindFirst(TreeScope.TreeScope_Descendants, a1condition);
-            var clickable = a1Cell.GetClickablePoint(out tagPOINT tagPoint);
-            Console.WriteLine($"{clickable} {tagPoint.x} {tagPoint.y}");
-        }
-        
+        // var u = 0;
+        // while(u<5)
+        // {
+        //     u++;
+        //     var a1Cell = cachedWindow.FindFirst(TreeScope.TreeScope_Descendants, a1condition);
+        //     var clickable = a1Cell.GetClickablePoint(out tagPOINT tagPoint);
+        //     Console.WriteLine($"{clickable} {tagPoint.x} {tagPoint.y}");
+        // }
 
         int count = 0;
         stopwatch = Stopwatch.StartNew();
