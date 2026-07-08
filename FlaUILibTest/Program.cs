@@ -34,12 +34,23 @@ class Program
         };
 
         var nativeCacheManager = new NativeCacheManager(automation);
+        var stopwatch = Stopwatch.StartNew();
         var result = nativeCacheManager.Find(root, windowCondition, propertyIds);
+        stopwatch.Stop();
+        Console.WriteLine($"Cached search time = {stopwatch.Elapsed.TotalMilliseconds:F2}ms");
 
+        var a1condition = automation.CreatePropertyCondition(UIA_AutomationIdPropertyId, "A1");
         var cachedWindow = result.GetElement(0);
+        while(true)
+        {
+            var a1Cell = cachedWindow.FindFirst(TreeScope.TreeScope_Descendants, a1condition);
+            var clickable = a1Cell.GetClickablePoint(out tagPOINT tagPoint);
+            Console.WriteLine($"{clickable} {tagPoint.x} {tagPoint.y}");
+        }
+        
 
         int count = 0;
-        var stopwatch = Stopwatch.StartNew();
+        stopwatch = Stopwatch.StartNew();
         PrintTree(cachedWindow, 0, ref count);
         stopwatch.Stop();
         Console.WriteLine($"PrintTree time = {stopwatch.Elapsed.TotalMilliseconds:F2}ms");

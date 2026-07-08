@@ -16,7 +16,7 @@ public sealed class NativeCacheManager
         cacheRequest.AutomationElementMode = AutomationElementMode.AutomationElementMode_Full;
         foreach (var propertyId in propertyIds)
             cacheRequest.AddProperty(propertyId);
-
+        
         var result = root.FindAllBuildCache(TreeScope.TreeScope_Subtree, condition, cacheRequest);
 
         return result;
