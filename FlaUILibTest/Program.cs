@@ -1,4 +1,4 @@
-using Interop.UIAutomationClient;
+﻿using Interop.UIAutomationClient;
 using System.Diagnostics;
 
 class Program
@@ -23,17 +23,7 @@ class Program
         var windowCondition = automation.CreatePropertyCondition(UIA_ClassNamePropertyId, "XLMAIN");
 
         IUIAutomationElement window = null;
-        for (var attempt = 0; attempt < 50 && window == null; attempt++)
-        {
-            window = root.FindFirst(TreeScope.TreeScope_Children, windowCondition);
-            if (window == null) Thread.Sleep(200);
-        }
-
-        if (window == null)
-        {
-            Console.WriteLine("Excel window not found");
-            return;
-        }
+        window = root.FindFirst(TreeScope.TreeScope_Children, windowCondition);
 
         var propertyIds = new[]
         {
@@ -44,22 +34,30 @@ class Program
         };
 
         var nativeCacheManager = new NativeCacheManager(automation);
-        var result = nativeCacheManager.Find(window, windowCondition, propertyIds);
+        var result = nativeCacheManager.Find(root, windowCondition, propertyIds);
 
-        PrintArray(result);
+        var cachedWindow = result.GetElement(0);
+
+        int count = 0;
+        var stopwatch = Stopwatch.StartNew();
+        PrintTree(cachedWindow, 0, ref count);
+        stopwatch.Stop();
+        Console.WriteLine($"PrintTree time = {stopwatch.Elapsed.TotalMilliseconds:F2}ms");
+        Console.WriteLine($"Elements count = {count}");
     }
 
-    static void PrintArray(IUIAutomationElementArray array)
+    static void PrintTree(IUIAutomationElement element, int depth, ref int count)
     {
-        Console.WriteLine($"count = {array.Length}");
-        for (var i = 0; i < array.Length; i++)
-        {
-            var element = array.GetElement(i);
-            var name = element.GetCachedPropertyValue(UIA_NamePropertyId);
-            var className = element.GetCachedPropertyValue(UIA_ClassNamePropertyId);
-            var automationId = element.GetCachedPropertyValue(UIA_AutomationIdPropertyId);
-            var controlType = element.GetCachedPropertyValue(UIA_ControlTypePropertyId);
-            Console.WriteLine($"[{i}] controlType={controlType} name='{name}' class='{className}' automationId='{automationId}'");
-        }
+        count++;
+        var name = element.GetCachedPropertyValue(UIA_NamePropertyId);
+        var className = element.GetCachedPropertyValue(UIA_ClassNamePropertyId);
+        var automationId = element.GetCachedPropertyValue(UIA_AutomationIdPropertyId);
+        var controlType = element.GetCachedPropertyValue(UIA_ControlTypePropertyId);
+        Console.WriteLine($"{new string(' ', depth * 2)}controlType={controlType} name='{name}' class='{className}' automationId='{automationId}'");
+
+        var children = element.GetCachedChildren();
+        if (children == null) return;
+        for (var i = 0; i < children.Length; i++)
+            PrintTree(children.GetElement(i), depth + 1, ref count);
     }
 }

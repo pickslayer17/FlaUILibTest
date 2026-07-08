@@ -17,6 +17,8 @@ public sealed class NativeCacheManager
         foreach (var propertyId in propertyIds)
             cacheRequest.AddProperty(propertyId);
 
-        return root.FindAllBuildCache(TreeScope.TreeScope_Subtree, condition, cacheRequest);
+        var result = root.FindAllBuildCache(TreeScope.TreeScope_Subtree, condition, cacheRequest);
+
+        return result;
     }
 }
