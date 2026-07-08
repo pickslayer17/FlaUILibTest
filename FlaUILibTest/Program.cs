@@ -44,8 +44,7 @@ class Program
         };
 
         var nativeCacheManager = new NativeCacheManager(automation);
-        var trueCondition = automation.CreateTrueCondition();
-        var result = nativeCacheManager.Find(window, trueCondition, propertyIds);
+        var result = nativeCacheManager.Find(window, windowCondition, propertyIds);
 
         PrintArray(result);
     }
