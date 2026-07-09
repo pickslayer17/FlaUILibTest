@@ -9,11 +9,10 @@ public sealed class NativeCacheManager
         _automation = automation;
     }
 
-    public IUIAutomationElementArray Find(IUIAutomationElement root, IUIAutomationCondition condition, int[] propertyIds, IUIAutomationCondition treeFilter)
+    public IUIAutomationElementArray Find(IUIAutomationElement root, IUIAutomationCondition condition, int[] propertyIds)
     {
         var cacheRequest = _automation.CreateCacheRequest();
         cacheRequest.TreeScope = TreeScope.TreeScope_Subtree; 
-        cacheRequest.TreeFilter = treeFilter; 
         cacheRequest.AutomationElementMode = AutomationElementMode.AutomationElementMode_Full;
         foreach (var propertyId in propertyIds)
             cacheRequest.AddProperty(propertyId);

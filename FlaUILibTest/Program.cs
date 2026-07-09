@@ -36,7 +36,7 @@ class Program
         var nativeCacheManager = new NativeCacheManager(automation);
         var treeFilter = automation.CreatePropertyCondition(UIA_ControlTypePropertyId, 50029);
         var stopwatch = Stopwatch.StartNew();
-        var result = nativeCacheManager.Find(window, windowCondition, propertyIds, treeFilter);
+        var result = nativeCacheManager.Find(window, windowCondition, propertyIds);
         stopwatch.Stop();
         Console.WriteLine($"Cached search time = {stopwatch.Elapsed.TotalMilliseconds:F2}ms");
         var cachedItemCount = result.Length;
@@ -51,6 +51,12 @@ class Program
         //     var clickable = a1Cell.GetClickablePoint(out tagPOINT tagPoint);
         //     Console.WriteLine($"{clickable} {tagPoint.x} {tagPoint.y}");
         // }
+
+        var structureHandler = new StructureChangedHandler();
+        automation.AddStructureChangedEventHandler(window, TreeScope.TreeScope_Subtree, null, structureHandler);
+        Console.WriteLine("subscribed to structure changed on window. tapem, potom Enter...");
+        Console.ReadLine();
+        automation.RemoveStructureChangedEventHandler(window, structureHandler);
 
         int count = 0;
         stopwatch = Stopwatch.StartNew();
