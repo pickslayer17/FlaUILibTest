@@ -1,3 +1,4 @@
+using FlaUI.Core.Definitions;
 using System.Collections.Concurrent;
 using UIDriver.Interfaces;
 using UIDriver.Matchers;
@@ -24,8 +25,11 @@ public sealed class UIWatcher : IStructureChangedListener, IPropertyChangedListe
         return result;
     }
 
-    public void NotifyOnStructureChanged(UIAutomationElement source)
+    public void NotifyOnStructureChanged(UIAutomationElement source, StructureChangeType changeType, int[] runtimeId)
     {
+        if (changeType == StructureChangeType.ChildRemoved)
+            return;
+
         foreach (var (id, watch) in _watches)
         {
             if (watch.TryResolveFindDescendant(source))

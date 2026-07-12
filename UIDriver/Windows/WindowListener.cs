@@ -50,7 +50,7 @@ public sealed class WindowListener : IDisposable
 
         foreach (var structureChangedListener in _structureChangedListeners)
         {
-            structureChangedListener.NotifyOnStructureChanged(new UIAutomationElement(element));
+            structureChangedListener.NotifyOnStructureChanged(new UIAutomationElement(element), changeType, runtimeId);
         }
     }
 
