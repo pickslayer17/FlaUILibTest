@@ -1,4 +1,4 @@
-using FlaUI.Core.Conditions;
+using Interop.UIAutomationClient;
 
 namespace UIDriver;
 
@@ -15,12 +15,12 @@ public sealed class UIBy
 
     public string? XPath { get; set; }
 
-    public ConditionBase? Root { get; init; }
+    public IUIAutomationCondition? Root { get; init; }
     public UIBy? AncestorOrParent { get; init; }
     public bool IsChild { get; init; }
     public UIBy[]? PrecedingSiblings { get; init; }
     public UIBy[]? Preceding { get; init; }
-    public ConditionBase? SelfCondition { get; init; }
+    public IUIAutomationCondition? SelfCondition { get; init; }
     public UIBy[]? FollowingSiblings { get; init; }
     public UIBy[]? Following { get; init; }
     public UIBy[]? Children { get; init; }

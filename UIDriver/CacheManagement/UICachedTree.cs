@@ -1,5 +1,6 @@
-using FlaUI.Core.AutomationElements;
 using Interop.UIAutomationClient;
+using UIDriver;
+using UIDriver.Constants;
 
 public class UICachedTree
 {
@@ -10,52 +11,44 @@ public class UICachedTree
         CachedWindow = cachedWindow;
     }
 
-    public static UiNode BuildUINodeTree(AutomationElement element, UiNode parent)
+    public static UiNode BuildUINodeTree(IUIAutomationElement element, UiNode parent)
     {
         var node = new UiNode
         {
             Parent = parent,
-            ControlType = element.ControlType,
-            Name = SafeName(element)?.ToString(),
-            ClassName = SafeClassName(element),
-            AutomationId = SafeAutomationId(element)
+            ControlType = SafeInt(element, (int)UiaProperty.ControlType),
+            Name = SafeString(element, (int)UiaProperty.Name),
+            ClassName = SafeString(element, (int)UiaProperty.ClassName),
+            AutomationId = SafeString(element, (int)UiaProperty.AutomationId)
         };
 
         var children = new List<UiNode>();
-        foreach (var child in element.CachedChildren)
-            children.Add(BuildUINodeTree(child, node));
+        var cachedChildren = element.GetCachedChildren();
+        if (cachedChildren != null)
+        {
+            for (var i = 0; i < cachedChildren.Length; i++)
+                children.Add(BuildUINodeTree(cachedChildren.GetElement(i), node));
+        }
 
         node.Children = children.ToArray();
         return node;
     }
 
-    public static int[] SafeRunTimeId(AutomationElement element)
+    public static int[] SafeRunTimeId(IUIAutomationElement element)
     {
-        try { return element.Properties.RuntimeId.Value; }
+        try { return (int[])element.GetRuntimeId(); }
         catch { return new int[0]; }
     }
 
-    public static int SafeProcessId(AutomationElement element)
+    private static string SafeString(IUIAutomationElement element, int propertyId)
     {
-        try { return element.Properties.ProcessId.Value; }
-        catch (Exception ex) { throw new Exception("oppa nihuya sebe! element bez ProcessId", ex); }
-    }
-
-    public static object? SafeName(AutomationElement element)
-    {
-        try { return element.Name; }
+        try { return element.GetCachedPropertyValue(propertyId) as string; }
         catch { return null; }
     }
 
-    public static string SafeClassName(AutomationElement element)
+    private static int SafeInt(IUIAutomationElement element, int propertyId)
     {
-        try { return element.ClassName; }
-        catch { return null; }
-    }
-
-    public static string SafeAutomationId(AutomationElement element)
-    {
-        try { return element.AutomationId; }
-        catch { return null; }
+        try { return Convert.ToInt32(element.GetCachedPropertyValue(propertyId)); }
+        catch { return 0; }
     }
 }

@@ -1,4 +1,3 @@
-using FlaUI.UIA3.Converters;
 using Interop.UIAutomationClient;
 using UIDriver;
 using UIDriver.Enums;
@@ -56,15 +55,11 @@ public class UICachedTreeManager : IStructureChangedListener
         return result;
     }
 
-    public void NotifyOnStructureChanged(UIAutomationElement source, FlaUI.Core.Definitions.StructureChangeType changeType, int[] runtimeId)
+    public void NotifyOnStructureChanged(UIAutomationElement source, StructureChangeType changeType, int[] runtimeId)
     {
-        if (changeType == FlaUI.Core.Definitions.StructureChangeType.ChildrenInvalidated)
+        if (changeType == StructureChangeType.StructureChangeType_ChildrenInvalidated)
         {
             var cacheRequest = GetCacheRequest(TreeScope.TreeScope_Subtree, null, [ (int)NativePropertyIds.UIA_NamePropertyId ]);
         }
-
-
-        source.Element.ToNative();
-
     }
 }

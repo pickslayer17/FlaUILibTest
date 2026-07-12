@@ -1,40 +1,18 @@
-using FlaUI.Core.Conditions;
-using FlaUI.Core.Identifiers;
+using Interop.UIAutomationClient;
 
 namespace FlaUILibTest;
 
 public sealed class UiNodePropMatcher
 {
-    private readonly ConditionBase _condition;
+    private readonly IUIAutomationCondition _condition;
 
-    public UiNodePropMatcher(ConditionBase condition)
+    public UiNodePropMatcher(IUIAutomationCondition condition)
     {
         _condition = condition;
     }
 
-    public bool Matches(UiNode element) => Matches(element, _condition);
-
-    private bool Matches(UiNode element, ConditionBase condition) => condition switch
+    public bool Matches(UiNode element)
     {
-        PropertyCondition propertyCondition => PropertyMatches(element, propertyCondition),
-        AndCondition andCondition => andCondition.Conditions.All(child => Matches(element, child)),
-        OrCondition orCondition => orCondition.Conditions.Any(child => Matches(element, child)),
-        NotCondition notCondition => !Matches(element, notCondition.Condition),
-        TrueCondition => true,
-        FalseCondition => false,
-        _ => throw new NotImplementedException($"Condition type {condition.GetType().Name} is not supported."),
-    };
-
-    private bool PropertyMatches(UiNode element, PropertyCondition propertyCondition)
-    {
-        var actual = GetPropertyValue(element, propertyCondition.Property);
-        var result = EqualityComparer<object?>.Default.Equals(actual, propertyCondition.Value);
-        return result;
-    }
-
-    private object? GetPropertyValue(UiNode element, PropertyId propertyId)
-    {
-        try { return element.GetPropertyValue(propertyId); }
-        catch { return null; }
+        return false; // to do: native condition matching
     }
 }

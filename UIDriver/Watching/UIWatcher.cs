@@ -1,4 +1,4 @@
-using FlaUI.Core.Definitions;
+using Interop.UIAutomationClient;
 using System.Collections.Concurrent;
 using UIDriver.Interfaces;
 using UIDriver.Matchers;
@@ -20,14 +20,13 @@ public sealed class UIWatcher : IStructureChangedListener, IPropertyChangedListe
         var watch = CreateWatch(finder, matcher);
         var result = await WaitWatchAsync(watch, order.By.Timeout);
         CompleteWatch(watch, order);
-        LogEventFactory.RaiseElementResolved(order.Id);
 
         return result;
     }
 
     public void NotifyOnStructureChanged(UIAutomationElement source, StructureChangeType changeType, int[] runtimeId)
     {
-        if (changeType == StructureChangeType.ChildRemoved)
+        if (changeType == StructureChangeType.StructureChangeType_ChildRemoved)
             return;
 
         foreach (var (id, watch) in _watches)

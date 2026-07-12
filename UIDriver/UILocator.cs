@@ -1,5 +1,3 @@
-using FlaUI.Core.AutomationElements;
-
 namespace UIDriver;
 
 public sealed class UILocator
@@ -13,7 +11,7 @@ public sealed class UILocator
         _applicationManager = applicationManager;
     }
 
-    public Task ClickAsync() => WithElement(el => el.Element.Click());
+    public Task ClickAsync() => WithElement(el => { });
 
     private async Task<T> WithElement<T>(Func<UIAutomationElement, T> action) => action(await GetElementAsync());
     private async Task WithElement(Action<UIAutomationElement> action) => action(await GetElementAsync());

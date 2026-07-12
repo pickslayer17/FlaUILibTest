@@ -1,5 +1,3 @@
-using FlaUI.Core;
-using FlaUI.Core.Identifiers;
 using System.Collections.Concurrent;
 using UIDriver.Constants;
 using UIDriver.CustomModels;
@@ -42,7 +40,7 @@ public sealed class UIApplicationManager
     }
 
     // Lock method. all changing of _containers are inside these 2 methods. Dont want to handle it right now. but i think non-locked code should be separated from lock-mechanism in the future
-    public void NotifyWindowOpened(UIAutomationElement window, EventId eventId)
+    public void NotifyWindowOpened(UIAutomationElement window)
     {
         lock (_windowEventLock)
         {
@@ -51,7 +49,6 @@ public sealed class UIApplicationManager
 
             if(_containers.TryGetValue(window.RunTimeId, out _))
             {
-                LogEventFactory.RaiseText($"Window [{window.RunTimeId}] already has a container.");
                 return;
             }
 
@@ -61,7 +58,7 @@ public sealed class UIApplicationManager
     }
 
     // Lock method
-    public void NotifyWindowClosed(RunTimeId id, EventId eventId)
+    public void NotifyWindowClosed(RunTimeId id)
     {
         lock (_windowEventLock)
         {
@@ -78,18 +75,11 @@ public sealed class UIApplicationManager
                 return;
             }
 
-            LogEventFactory.RaiseText($"Try to remove container, but it wasn't in collection");
         }
     }
 
     private void LogContainers()
     {
-        LogEventFactory.RaiseText($"\ncontainers count = {_containers.Count}");
-        foreach (var (i, kvp) in _containers.Select((kvp, i) => (i, kvp)))
-        {
-            LogEventFactory.RaiseText($"[CONTAINER][{i}] = [{kvp.Key}][{kvp.Value.WindowTitle}]");
-        }
-        LogEventFactory.RaiseText($"\n\n");
     }
 
     private WindowContainer ResolveContainer(UIBy by) => by.Scope switch
@@ -112,13 +102,10 @@ public sealed class UIApplicationManager
         var allApplicationContainers = _containers.Where(kv => kv.Value != _desktopContainer).Where(kv => kv.Value.ProcessId == ProcessId);
         if (!allApplicationContainers.Any())
         {
-            LogEventFactory.RaiseText($"IT seems there is no target process window anymore");
             throw new NotImplementedException();//should be some logic, dont know which
-            return;
         }
 
         _defaultContainer = allApplicationContainers.First().Value;
-        LogEventFactory.RaiseText($"Default container reassigned");
     }
 
     private bool IsDefaultContainerExists() => _containers.Any(kvp => ReferenceEquals(kvp.Value, _defaultContainer));

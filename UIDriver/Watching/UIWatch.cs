@@ -1,4 +1,3 @@
-using System.Windows.Forms;
 using UIDriver.Matchers;
 
 namespace UIDriver;
@@ -35,7 +34,6 @@ public sealed class UIWatch
 
         lock (_findLock)
         {
-            LogEventFactory.RaiseText($"Trying to resolve Descendants with runtimeId: {source.RunTimeId}");
             var found = _finder.Find(source);
             if (found is null) return false;
 
@@ -49,11 +47,9 @@ public sealed class UIWatch
 
         lock (_findLock)
         {
-            LogEventFactory.RaiseText($"Trying to resolve match for element with runtimeId: {source.RunTimeId}");
             if (_matcher.Matches(source))
             {
                 Complete(source);
-                LogEventFactory.RaiseText($"REsolved by match\n\n\n\n\n\n\n");
                 return true;
             }
 

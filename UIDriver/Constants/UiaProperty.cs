@@ -1,6 +1,3 @@
-using FlaUI.Core;
-using FlaUI.Core.Identifiers;
-
 namespace UIDriver;
 
 public enum UiaProperty
@@ -65,10 +62,9 @@ public enum UiaProperty
 
 public static class UiaPropertyHelper
 {
-    public static readonly PropertyId[] AllProperties = Enum.GetValues<UiaProperty>()
-        .Select(GetPropertyId)
+    public static readonly int[] AllProperties = Enum.GetValues<UiaProperty>()
+        .Select(property => (int)property)
         .ToArray();
 
-    public static PropertyId GetPropertyId(UiaProperty property)
-        => PropertyId.Register(AutomationType.UIA3, (int)property, property.ToString());
+    public static int GetPropertyId(UiaProperty property) => (int)property;
 }

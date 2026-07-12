@@ -1,5 +1,4 @@
-using FlaUI.Core.AutomationElements;
-using FlaUI.Core.Tools;
+using Interop.UIAutomationClient;
 using UIDriver.Constants;
 
 namespace UIDriver.CustomModels;
@@ -12,8 +11,8 @@ public sealed class RunTimeId
         {
             if (Id.Length == 1)
             {
-                if (Id[0] == RunTimeIdStates.ErrorTryingGet.ToInt()) return RunTimeIdStates.ErrorTryingGet;
-                if (Id[0] == RunTimeIdStates.Null.ToInt()) return RunTimeIdStates.Null;
+                if (Id[0] == (int)RunTimeIdStates.ErrorTryingGet) return RunTimeIdStates.ErrorTryingGet;
+                if (Id[0] == (int)RunTimeIdStates.Null) return RunTimeIdStates.Null;
 
                 throw new NotImplementedException("Unexpected single-element RuntimeId value: " + Id[0]);
             }
@@ -25,19 +24,18 @@ public sealed class RunTimeId
 
     public RunTimeId(int[] id)
     {
-        Id = id ?? [RunTimeIdStates.Null.ToInt()];
+        Id = id ?? [(int)RunTimeIdStates.Null];
     }
 
-    public RunTimeId(AutomationElement element)
+    public RunTimeId(IUIAutomationElement element)
     {
-        int[] runtimeId = [RunTimeIdStates.ErrorTryingGet.ToInt()];
+        int[] runtimeId = [(int)RunTimeIdStates.ErrorTryingGet];
         try
         {
-            runtimeId = element.Properties.RuntimeId.ValueOrDefault ?? [RunTimeIdStates.Null.ToInt()];
+            runtimeId = (int[]?)element.GetRuntimeId() ?? [(int)RunTimeIdStates.Null];
         }
-        catch (Exception ex)
+        catch
         {
-            LogEventFactory.RaiseText($"Failed to get RuntimeId for element: {ex.Message}");
         }
         Id = runtimeId;
     }

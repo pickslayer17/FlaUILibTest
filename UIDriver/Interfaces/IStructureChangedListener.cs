@@ -1,4 +1,4 @@
-﻿using FlaUI.Core.Definitions;
+﻿using Interop.UIAutomationClient;
 
 namespace UIDriver.Interfaces;
 

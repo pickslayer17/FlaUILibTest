@@ -1,5 +1,5 @@
 using UIDriver;
-using FlaUI.Core.Conditions;
+using Interop.UIAutomationClient;
 using FlaUILibTest;
 
 class UISuperFinder
@@ -13,7 +13,7 @@ class UISuperFinder
         _walker = walker;
     }
 
-    public IEnumerable<UiNode> FindAll(UiNode root, ConditionBase condition)
+    public IEnumerable<UiNode> FindAll(UiNode root, IUIAutomationCondition condition)
     {
         if (root == null) yield break;
 
@@ -30,7 +30,7 @@ class UISuperFinder
         }
     }
 
-    public IEnumerable<UiNode> FindChildren(UiNode root, ConditionBase condition)
+    public IEnumerable<UiNode> FindChildren(UiNode root, IUIAutomationCondition condition)
     {
         if (root == null) yield break;
 
@@ -44,7 +44,7 @@ class UISuperFinder
         }
     }
 
-    public bool CheckProperty(UiNode node, ConditionBase condition)
+    public bool CheckProperty(UiNode node, IUIAutomationCondition condition)
     {
         var result = new UiNodePropMatcher(condition).Matches(node);
         return result;

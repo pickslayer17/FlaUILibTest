@@ -1,4 +1,5 @@
-using FlaUI.UIA3;
+using Interop.UIAutomationClient;
+using UIDriver.Constants;
 
 namespace UIDriver;
 
@@ -15,14 +16,14 @@ public sealed class WindowContainer : IDisposable
 
     public WindowContainer(UIAutomationElement window)
     {
-        try { WindowTitle = window.Element.Properties.Name; } catch { }
+        try { WindowTitle = (string)window.Element.GetCurrentPropertyValue((int)UiaProperty.Name); } catch { }
         WindowRunTimeId = window.RunTimeId.Id;
-        ProcessId = window.Element.Properties.ProcessId;
+        try { ProcessId = (int)window.Element.GetCurrentPropertyValue((int)UiaProperty.ProcessId); } catch { }
 
         _watcher = new UIWatcher(window);
         _orderProcesser = new OrderProcesser(_watcher);
         _windowListener = new WindowListener(window);
-        _cachedTreeManager = new UICachedTreeManager(((UIA3Automation)window.Element.Automation).NativeAutomation);
+        _cachedTreeManager = new UICachedTreeManager(UIAutomationProvider.Automation);
         _windowListener.RegisterStructureChangedListener(_watcher);
         _windowListener.RegisterPropertyChangedListener(_watcher);
         _windowListener.RegisterStructureChangedListener(_cachedTreeManager);

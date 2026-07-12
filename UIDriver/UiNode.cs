@@ -1,37 +1,31 @@
-using FlaUI.Core.Definitions;
-using FlaUI.Core.Identifiers;
-
 public class UiNode
 {
     public UiNode Parent;
     public UiNode[] Children;
 
-    public ControlType ControlType;
+    public int ControlType;
     public string Name;
     public string ClassName;
     public string AutomationId;
 
-    public object GetPropertyValue(PropertyId propertyId)
+    public object GetPropertyValue(int propertyId)
     {
-        var propName = propertyId.Name;
-
-        switch (propName)
+        switch (propertyId)
         {
-            case nameof(Name):
+            case (int)UIDriver.UiaProperty.Name:
                 return Name;
 
-            case nameof(ClassName):
+            case (int)UIDriver.UiaProperty.ClassName:
                 return ClassName;
 
-            case nameof(AutomationId):
+            case (int)UIDriver.UiaProperty.AutomationId:
                 return AutomationId;
 
-            case nameof(ControlType):
-                return ControlType;   // или .ToString() если enum
+            case (int)UIDriver.UiaProperty.ControlType:
+                return ControlType;
 
             default:
-                return null;   // или string.Empty
+                return null;
         }
-        
     }
 }

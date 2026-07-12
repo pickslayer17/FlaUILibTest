@@ -1,37 +1,46 @@
 using System.Diagnostics;
-using FlaUI.Core;
-using FlaUI.Core.Conditions;
-using FlaUI.UIA3;
+using Interop.UIAutomationClient;
+using UIDriver.Constants;
 
 namespace UIDriver;
 
 public sealed class UIDriver : IDisposable
 {
-    public ConditionFactory ConditionFactory => _automation.ConditionFactory;
-    private UIA3Automation _automation;
+    private readonly IUIAutomation _automation;
     private readonly UIApplicationManager _applicationManager;
-    private Application? _application;
+    private Process? _process;
 
     public UIDriver()
     {
-        _automation = new UIA3Automation();
+        _automation = new CUIAutomation8();
+        UIAutomationProvider.Automation = _automation;
         _applicationManager = new UIApplicationManager();
     }
 
     public void Launch(ProcessStartInfo processStartInfo)
     {
-        _application = Application.Launch(processStartInfo);
-        _applicationManager.ProcessId = _application.ProcessId;
-        _applicationManager.RegisterDesktop(new UIAutomationElement(_automation.GetDesktop()));
-        _applicationManager.RegisterDefault(new UIAutomationElement(_application.GetMainWindow(_automation)));
+        _process = Process.Start(processStartInfo);
+        _applicationManager.ProcessId = _process!.Id;
+
+        var desktop = _automation.GetRootElement();
+        _applicationManager.RegisterDesktop(new UIAutomationElement(desktop));
+
+        var mainWindow = WaitForMainWindow(desktop);
+        _applicationManager.RegisterDefault(new UIAutomationElement(mainWindow));
     }
 
-    public UILocator Locator(Func<ConditionFactory, ConditionBase> elementCondition)
+    private IUIAutomationElement WaitForMainWindow(IUIAutomationElement desktop)
     {
-        var by = new UIBy { SelfCondition = elementCondition(_automation.ConditionFactory) };
-        var locator = new UILocator(by, _applicationManager);
+        var processIdCondition = _automation.CreatePropertyCondition((int)UiaProperty.ProcessId, _process!.Id);
 
-        return locator;
+        IUIAutomationElement? window = null;
+        for (var attempt = 0; attempt < 50 && window == null; attempt++)
+        {
+            window = desktop.FindFirst(TreeScope.TreeScope_Children, processIdCondition);
+            if (window == null) Thread.Sleep(200);
+        }
+
+        return window!;
     }
 
     public UILocator Locator(UIBy by)
@@ -43,6 +52,5 @@ public sealed class UIDriver : IDisposable
 
     public void Dispose()
     {
-        _automation.Dispose();
     }
 }
