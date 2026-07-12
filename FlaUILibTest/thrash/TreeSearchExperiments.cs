@@ -19,8 +19,8 @@ public static class TreeSearchExperiments
         var uiNodeTree = Helpers.BuildUINodeTree(mainWindowCached, null);
 
         Console.WriteLine("\n=== HYBRID SEARCH ===");
-        customSearch.HybridSearchFind(mainWindow, targetCondition);
-        customSearch.HybridSearchFind(mainWindow, targetCondition, true);
+        //customSearch.HybridSearchFind(mainWindow, targetCondition);
+        //customSearch.HybridSearchFind(mainWindow, targetCondition, true);
 
         var convertedCondition = ConditionConverter.ToNative(automation, targetCondition);
         var nativeMatcher = new NativePropertyMatcher(targetCondition).Matches;

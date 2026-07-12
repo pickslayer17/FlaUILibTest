@@ -1,12 +1,13 @@
 using FlaUI.Core.AutomationElements;
+using UIDriver.CustomModels;
 
 namespace UIDriver;
 
-public sealed class AutomationElementObject
+public sealed class UIAutomationElement
 {
     public AutomationElement Element { get; }
 
     public RunTimeId RunTimeId => new(Element);
 
-    public AutomationElementObject(AutomationElement element) => Element = element;
+    public UIAutomationElement(AutomationElement element) => Element = element;
 }

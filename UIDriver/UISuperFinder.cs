@@ -2,12 +2,12 @@ using UIDriver;
 using FlaUI.Core.Conditions;
 using FlaUILibTest;
 
-class SuperFinder
+class UISuperFinder
 {
     readonly UiNode _desktop;
     readonly UiNodeWalker _walker;
 
-    public SuperFinder(UiNode desktop, UiNodeWalker walker)
+    public UISuperFinder(UiNode desktop, UiNodeWalker walker)
     {
         _desktop = desktop;
         _walker = walker;
@@ -50,7 +50,7 @@ class SuperFinder
         return result;
     }
 
-    public UiNode Find(BY targetBy)
+    public UiNode Find(UIBy targetBy)
     {
         var stepStack = BuildStepStack(targetBy, out var scope);
         // detect root
@@ -63,7 +63,7 @@ class SuperFinder
         return null;
     }
 
-    UiNode Search(UiNode source, Stack<BY> stepStack)
+    UiNode Search(UiNode source, Stack<UIBy> stepStack)
     {
         // stack has something? - go further! stack is empty? - that means all previous check steps were passed - it is the element we are looking for.
         var stepBy = stepStack.Count > 0 ? stepStack.Pop() : null;
@@ -89,7 +89,7 @@ class SuperFinder
 
     // checking all except SelfConditions. If anything is false - return false and break whole search
     // take real element and walk through all relations
-    bool CheckRelations(UiNode element, BY by)
+    bool CheckRelations(UiNode element, UIBy by)
     {
         if (!CheckSiblingIndex(element, by)) return false;
 
@@ -126,7 +126,7 @@ class SuperFinder
         return true;
     }
 
-    bool CheckElement(UiNode element, BY by)
+    bool CheckElement(UiNode element, UIBy by)
     {
         var selfConditionOk = CheckProperty(element, by.SelfCondition);
         if (selfConditionOk)
@@ -141,7 +141,7 @@ class SuperFinder
         return false;
     }
 
-    bool CheckSiblingIndex(UiNode element, BY by)
+    bool CheckSiblingIndex(UiNode element, UIBy by)
     {
         if (by.SiblingIndex == null)
             return true;
@@ -157,7 +157,7 @@ class SuperFinder
         return previousSibling == null && siblingIndex == 0;
     }
 
-    bool CheckPrecedingSibling(UiNode element, BY precedingSiblingBy)
+    bool CheckPrecedingSibling(UiNode element, UIBy precedingSiblingBy)
     {
         var precedingSibling = _walker.MovePrevSibling(element);
         while (precedingSibling != null)
@@ -171,7 +171,7 @@ class SuperFinder
         return false;
     }
 
-    bool CheckFollowingSibling(UiNode element, BY followingSiblingBy)
+    bool CheckFollowingSibling(UiNode element, UIBy followingSiblingBy)
     {
         var followingSibling = _walker.MoveNextSibling(element);
         while (followingSibling != null)
@@ -185,7 +185,7 @@ class SuperFinder
         return false;
     }
 
-    bool CheckChild(UiNode element, BY childBy)
+    bool CheckChild(UiNode element, UIBy childBy)
     {
         var child = _walker.MoveFirstChild(element);
         while (child != null)
@@ -203,10 +203,10 @@ class SuperFinder
         return false;
     }
 
-    bool CheckDescendant(UiNode element, BY descendantBy)
+    bool CheckDescendant(UiNode element, UIBy descendantBy)
     {
         // we already now the parent, we dont need all parents. but the function works with stack. so i dont see any problem
-        var descendantStack = new Stack<BY>();
+        var descendantStack = new Stack<UIBy>();
         descendantStack.Push(descendantBy);
         var found = Search(element, descendantStack);
 
@@ -215,7 +215,7 @@ class SuperFinder
 
     // these 2 guys are completely different.
     // following - getting all following-siblings and perform Search on each. After return to where we start -> go to parent -> moveNextSibling -> perform Search on it
-    bool CheckFollowing(UiNode element, BY followingBy)
+    bool CheckFollowing(UiNode element, UIBy followingBy)
     {
         UiNode found = null;
 
@@ -251,7 +251,7 @@ class SuperFinder
     }
 
     // seems like the same mechanism as above,
-    bool CheckPreceding(UiNode element, BY precedingBy)
+    bool CheckPreceding(UiNode element, UIBy precedingBy)
     {
         UiNode found = null;
 
@@ -287,9 +287,9 @@ class SuperFinder
     }
 
     // we know our element if final
-    UiNode SearchSingleStep(UiNode source, BY by)
+    UiNode SearchSingleStep(UiNode source, UIBy by)
     {
-        var stepStack = new Stack<BY>();
+        var stepStack = new Stack<UIBy>();
         stepStack.Push(by);
         var found = Search(source, stepStack);
 
@@ -297,7 +297,7 @@ class SuperFinder
     }
 
     // our element could have ancestors
-    UiNode SearchFromRoot(UiNode source, BY by)
+    UiNode SearchFromRoot(UiNode source, UIBy by)
     {
         var stepStack = BuildStepStack(by, out var scope);
 
@@ -315,9 +315,9 @@ class SuperFinder
         return null;
     }
 
-    Stack<BY> BuildStepStack(BY by, out WindowScope scope)
+    Stack<UIBy> BuildStepStack(UIBy by, out WindowScope scope)
     {
-        var stepStack = new Stack<BY>();
+        var stepStack = new Stack<UIBy>();
         var current = by;
         scope = by.Scope;
         while (current != null)

@@ -4,5 +4,5 @@ namespace UIDriver.Matchers;
 
 public interface IMatcher
 {
-    bool Matches(AutomationElementObject element);
+    bool Matches(UIAutomationElement element);
 }

@@ -10,7 +10,7 @@ public enum WatchStatus
     Cancelled
 }
 
-public sealed class Watch
+public sealed class UIWatch
 {
     public Guid Id { get; } = Guid.NewGuid();
     public WatchStatus Status { get; private set; } = WatchStatus.Pending;
@@ -19,17 +19,17 @@ public sealed class Watch
     private Lock _matchLock = new();
     private readonly IFinder _finder;
     private readonly IMatcher _matcher;
-    private readonly TaskCompletionSource<AutomationElementObject> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource<UIAutomationElement> _tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    public Watch(IFinder finder, IMatcher matcher)
+    public UIWatch(IFinder finder, IMatcher matcher)
     {
         _finder = finder;
         _matcher = matcher;
     }
 
-    public Task<AutomationElementObject> Task => _tcs.Task;
+    public Task<UIAutomationElement> Task => _tcs.Task;
 
-    public bool TryResolveFindDescendant(AutomationElementObject source)
+    public bool TryResolveFindDescendant(UIAutomationElement source)
     {
         if (_tcs.Task.IsCompleted) return true;
 
@@ -43,7 +43,7 @@ public sealed class Watch
         }
     }
 
-    public bool TryResolveMatch(AutomationElementObject source)
+    public bool TryResolveMatch(UIAutomationElement source)
     {
         if (_tcs.Task.IsCompleted) return true;
 
@@ -61,7 +61,7 @@ public sealed class Watch
         }
     }
 
-    private bool Complete(AutomationElementObject foundElement)
+    private bool Complete(UIAutomationElement foundElement)
     {
         var result = _tcs.TrySetResult(foundElement);
         Status = WatchStatus.Completed;

@@ -1,8 +1,10 @@
+using UIDriver.CustomModels;
+
 namespace UIDriver;
 
 public static class LogEventFactory
 {
-    public static void RaiseOrderCreated(Guid orderId, BY by) => LogEventHandler.Handle(new OrderCreated(orderId, by));
+    public static void RaiseOrderCreated(Guid orderId, UIBy by) => LogEventHandler.Handle(new OrderCreated(orderId, by));
 
     public static void RaiseElementResolved(Guid orderId) => LogEventHandler.Handle(new ElementResolved(orderId));
 

@@ -1,6 +1,4 @@
 using FlaUI.Core.AutomationElements;
-using FlaUI.UIA3;
-using FlaUILibTest.Extensions;
 
 public static class Helpers
 {
@@ -71,18 +69,18 @@ public static class Helpers
 
     public static int PrintCachedTreeSteps;
 
-    public static void PrintCachedTree(AutomationElement element, int depth, System.Text.StringBuilder output)
-    {
-        PrintCachedTreeSteps++;
-        var name = SafeName(element);
-        var processId = SafeProcessId(element);
-        var runtimeId = SafeRunTimeId(element).ToFormattedString();
+    //public static void PrintCachedTree(AutomationElement element, int depth, System.Text.StringBuilder output)
+    //{
+    //    PrintCachedTreeSteps++;
+    //    var name = SafeName(element);
+    //    var processId = SafeProcessId(element);
+    //    var runtimeId = SafeRunTimeId(element).ToFormattedString();
 
-        output.AppendLine($"{new string(' ', depth * 2)}name='{name}' pid={processId} runtimeId={runtimeId}");
+    //    output.AppendLine($"{new string(' ', depth * 2)}name='{name}' pid={processId} runtimeId={runtimeId}");
 
-        foreach (var child in element.CachedChildren)
-            PrintCachedTree(child, depth + 1, output);
-    }
+    //    foreach (var child in element.CachedChildren)
+    //        PrintCachedTree(child, depth + 1, output);
+    //}
 
     public static void PrintUiNodeTree(UiNode node, int depth)
     {

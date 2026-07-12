@@ -8,12 +8,12 @@ public class AncestorFinder : FinderDecoratorBase
     {
     }
 
-    public override AutomationElementObject? Find(AutomationElementObject source)
+    public override UIAutomationElement? Find(UIAutomationElement source)
     {
         throw new NotImplementedException();
     }
 
-    public override AutomationElementObject[] FindAll(AutomationElementObject source)
+    public override UIAutomationElement[] FindAll(UIAutomationElement source)
     {
         throw new NotImplementedException();
     }

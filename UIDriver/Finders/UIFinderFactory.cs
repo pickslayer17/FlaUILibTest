@@ -2,9 +2,9 @@ using UIDriver.Finders.Finders;
 
 namespace UIDriver;
 
-public static class FinderFactory
+public static class UIFinderFactory
 {
-    public static IFinder GetFinder(BY by)
+    public static IFinder GetFinder(UIBy by)
     {
         IFinder finder;
         finder = new SelfFinder(by);

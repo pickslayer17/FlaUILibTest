@@ -1,4 +1,3 @@
-using FlaUI.Core;
 using FlaUI.Core.Conditions;
 using FlaUI.Core.Definitions;
 using System.Diagnostics;
@@ -14,7 +13,7 @@ public static class Shkatulka
         };
         processStartInfo.EnvironmentVariables["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = "--remote-debugging-port=9234";
         processStartInfo.UseShellExecute = false;
-        var driver = new UIDriver.Driver();
+        var driver = new UIDriver.UIDriver();
         LogEventHandler.Subscribe(new ConsoleLogger());
         driver.Launch(processStartInfo);
         var elementFromDrvier = driver.Locator(cf => cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")));
@@ -34,11 +33,11 @@ public static class Shkatulka
         Console.ReadLine();
 
         ConditionFactory condFact = driver.ConditionFactory;
-        var okButtonInFormatCellsBY = new BY
+        var okButtonInFormatCellsBY = new UIBy
         {
             SelfCondition = condFact.ByControlType(ControlType.Button).And(condFact.ByName("OK")),
             IsChild = true,
-            AncestorOrParent = new BY
+            AncestorOrParent = new UIBy
             {
                 Scope = WindowScope.Desktop,
                 SelfCondition = condFact.ByControlType(ControlType.Window).And(condFact.ByName("Format Cells"))
@@ -49,32 +48,6 @@ public static class Shkatulka
         Console.WriteLine("works!");
 
         Console.ReadLine();
-    }
-
-    public async static Task OleEngineTest()
-    {
-        var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
-        {
-            WindowStyle = ProcessWindowStyle.Normal
-        };
-        processStartInfo.EnvironmentVariables["WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS"] = "--remote-debugging-port=9234";
-        processStartInfo.UseShellExecute = false;
-
-        //MonitorApp.Start();
-
-        var driver = new FlaUILibTest.UIDriver.UIDriver();
-        driver.LaunchApplication(processStartInfo);
-
-        var elementFromDrvier = driver.UILocator(cf => cf.ByControlType(ControlType.DataItem).And(cf.ByAutomationId("A1")));
-        Console.WriteLine("works!");
-        await elementFromDrvier.ClickAsync();
-
-        var okButtonInFormatCells =
-           driver.UILocator(
-               cf => cf.ByControlType(ControlType.Button).And(cf.ByName("OK")),
-               cf => cf.ByControlType(ControlType.Window).And(cf.ByName("Format Cells"))
-               );
-        await okButtonInFormatCells.ClickAsync();
     }
 
     //public async static void DcPushTest()

@@ -15,6 +15,31 @@ public sealed class CacheManager
         _automation = automation;
     }
 
+    public static void RunStandalone()
+    {
+        var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
+        {
+            WindowStyle = ProcessWindowStyle.Normal,
+            UseShellExecute = false
+        };
+        Process.Start(processStartInfo);
+
+        var automation = new UIA3Automation();
+        var desktop = automation.GetDesktop();
+
+        AutomationElement window = null;
+        window = desktop.FindFirstChild(cf => cf.ByClassName("XLMAIN"));
+
+        var condition = automation.ConditionFactory.ByControlType(ControlType.DataItem);
+
+        var cacheManager = new CacheManager(automation);
+        var result = cacheManager.CachedSearch(window, condition, out var cachedWindow);
+
+        Console.WriteLine($"CachedSearch found = {result.Count}");
+
+        automation.Dispose();
+    }
+
     public List<AutomationElement> CachedSearch(AutomationElement root, ConditionBase condition, out AutomationElement mainWindowCachedOut)
     {
         AutomationElement mainWindowCached = null;
@@ -26,6 +51,7 @@ public sealed class CacheManager
                 .ByClassName("XLMAIN")
                 )
             );
+      
 
         ExecuteInCacheMode(() =>
         {
@@ -62,11 +88,14 @@ public sealed class CacheManager
         Console.WriteLine($"[ebaaaaat {cacheWatch.Elapsed.TotalMilliseconds:F2}ms");
         Console.WriteLine($"Whole time in for cache actions: {_cacheWholeSearchTime:f2}ms");
         Leaderboard.ReportFindAll("[13] CachedSearch", _cacheWholeSearchTime, result.Count, 0);
+        CountInCache(mainWindowCached);
+         Console.WriteLine($"elements count = {count}");
 
         mainWindowCachedOut = mainWindowCached;
         return result;
     }
 
+    public static int count=0;
     public void FindInCache(AutomationElement cache, ConditionBase condition, List<AutomationElement> result)
     {
         var native = ((UIA3FrameworkAutomationElement)cache.FrameworkAutomationElement).NativeElement;
@@ -75,6 +104,17 @@ public sealed class CacheManager
         foreach (var child in cache.CachedChildren)
         {
             FindInCache(child, condition, result);
+        }
+    }
+
+    public void CountInCache(AutomationElement cache)
+    {
+
+        count++;
+
+        foreach (var child in cache.CachedChildren)
+        {
+            CountInCache(child);
         }
     }
 

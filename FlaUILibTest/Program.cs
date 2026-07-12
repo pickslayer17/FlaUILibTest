@@ -10,6 +10,9 @@ class Program
 
     static void Main()
     {
+        // CacheManager.RunStandalone();
+        // return;
+
         var processStartInfo = new ProcessStartInfo(@"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE", "/e")
         {
             WindowStyle = ProcessWindowStyle.Normal,
@@ -36,11 +39,11 @@ class Program
         var nativeCacheManager = new NativeCacheManager(automation);
         var treeFilter = automation.CreatePropertyCondition(UIA_ControlTypePropertyId, 50029);
         var stopwatch = Stopwatch.StartNew();
-        var result = nativeCacheManager.Find(window, windowCondition, propertyIds);
+        var result = nativeCacheManager.FindFirstBuildCache(window, windowCondition, propertyIds);
         stopwatch.Stop();
         Console.WriteLine($"Cached search time = {stopwatch.Elapsed.TotalMilliseconds:F2}ms");
-        var cachedItemCount = result.Length;
-        var cachedWindow = result.GetElement(0);
+        var cachedItemCount = result != null; //result.Length;//
+        var cachedWindow = result;//result.GetElement(0);//
 
         var a1condition = automation.CreatePropertyCondition(UIA_AutomationIdPropertyId, "A1");
         // var u = 0;
@@ -52,11 +55,11 @@ class Program
         //     Console.WriteLine($"{clickable} {tagPoint.x} {tagPoint.y}");
         // }
 
-        var structureHandler = new StructureChangedHandler();
-        automation.AddStructureChangedEventHandler(window, TreeScope.TreeScope_Subtree, null, structureHandler);
-        Console.WriteLine("subscribed to structure changed on window. tapem, potom Enter...");
-        Console.ReadLine();
-        automation.RemoveStructureChangedEventHandler(window, structureHandler);
+        // var structureHandler = new StructureChangedHandler();
+        // automation.AddStructureChangedEventHandler(window, TreeScope.TreeScope_Subtree, null, structureHandler);
+        // Console.WriteLine("subscribed to structure changed on window. tapem, potom Enter...");
+        // Console.ReadLine();
+        // automation.RemoveStructureChangedEventHandler(window, structureHandler);
 
         int count = 0;
         stopwatch = Stopwatch.StartNew();
@@ -73,7 +76,7 @@ class Program
         var className = element.GetCachedPropertyValue(UIA_ClassNamePropertyId);
         var automationId = element.GetCachedPropertyValue(UIA_AutomationIdPropertyId);
         var controlType = element.GetCachedPropertyValue(UIA_ControlTypePropertyId);
-        Console.WriteLine($"{new string(' ', depth * 2)}controlType={controlType} name='{name}' class='{className}' automationId='{automationId}'");
+        //Console.WriteLine($"{new string(' ', depth * 2)}controlType={controlType} name='{name}' class='{className}' automationId='{automationId}'");
 
         var children = element.GetCachedChildren();
         if (children == null) return;

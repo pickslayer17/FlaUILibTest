@@ -2,7 +2,7 @@ using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Tools;
 using UIDriver.Constants;
 
-namespace UIDriver;
+namespace UIDriver.CustomModels;
 
 public sealed class RunTimeId
 {

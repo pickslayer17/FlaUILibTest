@@ -9,6 +9,6 @@ public abstract class FinderDecoratorBase : IFinder
         Inner = inner;
     }
 
-    public abstract AutomationElementObject? Find(AutomationElementObject source);
-    public abstract AutomationElementObject[] FindAll(AutomationElementObject source);
+    public abstract UIAutomationElement? Find(UIAutomationElement source);
+    public abstract UIAutomationElement[] FindAll(UIAutomationElement source);
 }

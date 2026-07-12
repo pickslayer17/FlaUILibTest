@@ -2,7 +2,7 @@
 
 public static class MatcherFactory
 {
-    public static IMatcher GetMatcher(BY by)
+    public static IMatcher GetMatcher(UIBy by)
     {
         IMatcher matcher;
         // conditions, trees, logic, decorators, etc. can be added here in the future

@@ -1,4 +1,4 @@
-using FlaUI.Core;
+using FlaUI.UIA3;
 
 namespace UIDriver;
 
@@ -8,23 +8,28 @@ public sealed class WindowContainer : IDisposable
     public int[] WindowRunTimeId { get; set; }
     public int ProcessId { get; set; }
 
-    private readonly Watcher _watcher;
-    private readonly WindowManager _windowManager;
+    private readonly UIWatcher _watcher;
+    private readonly OrderProcesser _orderProcesser;
     private readonly WindowListener _windowListener;
+    private readonly UICachedTreeManager _cachedTreeManager;
 
-    public WindowContainer(AutomationElementObject window, IEventLibrary eventLibrary)
+    public WindowContainer(UIAutomationElement window)
     {
         try { WindowTitle = window.Element.Properties.Name; } catch { }
         WindowRunTimeId = window.RunTimeId.Id;
-        ProcessId = window.Element.Properties.ProcessId; // id like to see exception here
+        ProcessId = window.Element.Properties.ProcessId;
 
-        _watcher = new Watcher(window);
-        _windowManager = new WindowManager(window, _watcher);
-        _windowListener = new WindowListener(window, _watcher, eventLibrary);
+        _watcher = new UIWatcher(window);
+        _orderProcesser = new OrderProcesser(_watcher);
+        _windowListener = new WindowListener(window);
+        _cachedTreeManager = new UICachedTreeManager(((UIA3Automation)window.Element.Automation).NativeAutomation);
+        _windowListener.RegisterStructureChangedListener(_watcher);
+        _windowListener.RegisterPropertyChangedListener(_watcher);
+        _windowListener.RegisterStructureChangedListener(_cachedTreeManager);
         _windowListener.StartListening();
     }
 
-    public Task<AutomationElementObject> SubmitOrderAsync(Order order) => _windowManager.ProcessOrderAsync(order);
+    public Task<UIAutomationElement> SubmitOrderAsync(Order order) => _orderProcesser.ProcessOrderAsync(order);
 
     public void RegisterToggleWindowEvent(ToggleWindowListener subscriber) => _windowListener.RegisterToggleWindowEvent(subscriber);
 

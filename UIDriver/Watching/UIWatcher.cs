@@ -1,19 +1,20 @@
 using System.Collections.Concurrent;
+using UIDriver.Interfaces;
 using UIDriver.Matchers;
 
 namespace UIDriver;
 
-public sealed class Watcher
+public sealed class UIWatcher : IStructureChangedListener, IPropertyChangedListener
 {
-    private readonly ConcurrentDictionary<Guid, Watch> _watches = new();
-    private readonly AutomationElementObject _windowSource;
+    private readonly ConcurrentDictionary<Guid, UIWatch> _watches = new();
+    private readonly UIAutomationElement _windowSource;
 
-    public Watcher(AutomationElementObject windowSource)
+    public UIWatcher(UIAutomationElement windowSource)
     {
         _windowSource = windowSource;
     }
 
-    public async Task<AutomationElementObject> ExecuteOrderAsync(Order order, IFinder finder, IMatcher matcher)
+    public async Task<UIAutomationElement> ExecuteOrderAsync(Order order, IFinder finder, IMatcher matcher)
     {
         var watch = CreateWatch(finder, matcher);
         var result = await WaitWatchAsync(watch, order.By.Timeout);
@@ -23,7 +24,7 @@ public sealed class Watcher
         return result;
     }
 
-    public void PokeOnStructureChanged(AutomationElementObject source)
+    public void NotifyOnStructureChanged(UIAutomationElement source)
     {
         foreach (var (id, watch) in _watches)
         {
@@ -34,7 +35,7 @@ public sealed class Watcher
         }
     }
 
-    public void PokeOnPropertyChanged(AutomationElementObject source)
+    public void NotifyOnPropertyChanged(UIAutomationElement source)
     {
         foreach (var (id, watch) in _watches)
         {
@@ -45,15 +46,15 @@ public sealed class Watcher
         }
     }
 
-    private Watch CreateWatch(IFinder finder, IMatcher matcher)
+    private UIWatch CreateWatch(IFinder finder, IMatcher matcher)
     {
-        var watch = new Watch(finder, matcher);
+        var watch = new UIWatch(finder, matcher);
         _watches.TryAdd(watch.Id, watch);
 
         return watch;
     }
 
-    private async Task<AutomationElementObject> WaitWatchAsync(Watch watch, TimeSpan timeout)
+    private async Task<UIAutomationElement> WaitWatchAsync(UIWatch watch, TimeSpan timeout)
     {
         if (!watch.TryResolveFindDescendant(_windowSource))
             await watch.Task.WaitAsync(timeout); // add exeptions for timeouts
@@ -61,7 +62,7 @@ public sealed class Watcher
         return await watch.Task;
     }
 
-    private void CompleteWatch(Watch watch, Order order)
+    private void CompleteWatch(UIWatch watch, Order order)
     {
         _watches.TryRemove(watch.Id, out _);
         order.Status = OrderStatus.Completed;

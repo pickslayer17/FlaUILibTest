@@ -2,15 +2,14 @@ using FlaUI.Core;
 using FlaUI.Core.Identifiers;
 using System.Collections.Concurrent;
 using UIDriver.Constants;
+using UIDriver.CustomModels;
 
 namespace UIDriver;
 
-public sealed class ApplicationManager
+public sealed class UIApplicationManager
 {
     public int ProcessId { get; set; }
-    public IEventLibrary EventLibrary => _automationBase.EventLibrary;
 
-    private readonly AutomationBase _automationBase;
     private readonly ConcurrentDictionary<RunTimeId, WindowContainer> _containers = new();
     private readonly ConcurrentDictionary<Guid, Order> _orders = new();
     private readonly ToggleWindowListener _toggleWindowListener;
@@ -20,17 +19,16 @@ public sealed class ApplicationManager
     private WindowContainer? _defaultContainer;
     private WindowContainer? _desktopContainer;
 
-    public ApplicationManager(AutomationBase automation)
+    public UIApplicationManager()
     {
-        _automationBase = automation;
         _toggleWindowListener = new ToggleWindowListener(this);
     }
 
-    public void RegisterDefault(AutomationElementObject window) => _defaultContainer = CreateWindowContainer(window);
+    public void RegisterDefault(UIAutomationElement window) => _defaultContainer = CreateWindowContainer(window);
 
-    public void RegisterDesktop(AutomationElementObject window) => _desktopContainer = CreateWindowContainer(window);
+    public void RegisterDesktop(UIAutomationElement window) => _desktopContainer = CreateWindowContainer(window);
 
-    public Task<AutomationElementObject> RequestElementAsync(BY by)
+    public Task<UIAutomationElement> RequestElementAsync(UIBy by)
     {
         lock (_windowEventLock)
         {
@@ -44,7 +42,7 @@ public sealed class ApplicationManager
     }
 
     // Lock method. all changing of _containers are inside these 2 methods. Dont want to handle it right now. but i think non-locked code should be separated from lock-mechanism in the future
-    public void NotifyWindowOpened(AutomationElementObject window, EventId eventId)
+    public void NotifyWindowOpened(UIAutomationElement window, EventId eventId)
     {
         lock (_windowEventLock)
         {
@@ -94,14 +92,14 @@ public sealed class ApplicationManager
         LogEventFactory.RaiseText($"\n\n");
     }
 
-    private WindowContainer ResolveContainer(BY by) => by.Scope switch
+    private WindowContainer ResolveContainer(UIBy by) => by.Scope switch
     {
         WindowScope.Default => _defaultContainer!,
         WindowScope.Desktop => _desktopContainer!,
         _ => throw new NotImplementedException()
     };
 
-    private Order RegisterOrder(BY by)
+    private Order RegisterOrder(UIBy by)
     {
         var order = new Order { By = by };
         _orders.TryAdd(order.Id, order);
@@ -125,12 +123,12 @@ public sealed class ApplicationManager
 
     private bool IsDefaultContainerExists() => _containers.Any(kvp => ReferenceEquals(kvp.Value, _defaultContainer));
 
-    private WindowContainer CreateWindowContainer(AutomationElementObject window)
+    private WindowContainer CreateWindowContainer(UIAutomationElement window)
     {
         if(window.RunTimeId.State != RunTimeIdStates.Valid)
             throw new Exception($"Invalid window RuntimeId: {string.Join(",", window.RunTimeId)}");
 
-        var container = new WindowContainer(window, EventLibrary);
+        var container = new WindowContainer(window);
         container.RegisterToggleWindowEvent(_toggleWindowListener);
         if(!_containers.TryAdd(window.RunTimeId, container))
             throw new Exception($"Failed to add window container for window [{string.Join(",", window.RunTimeId)}].");
