@@ -1,3 +1,5 @@
+using Interop.UIAutomationClient;
+
 namespace UIDriver.Finders.Finders;
 
 public sealed class SelfFinder : IFinder
@@ -9,13 +11,13 @@ public sealed class SelfFinder : IFinder
 
     public UIAutomationElement? Find(UIAutomationElement source)
     {
-        var found = source.Element.FindFirst(Interop.UIAutomationClient.TreeScope.TreeScope_Descendants, _elementBy.SelfCondition!);
+        var found = source.Element.FindFirst(TreeScope.TreeScope_Descendants, _elementBy.SelfCondition!);
         return found is null ? null : new UIAutomationElement(found);
     }
 
     public UIAutomationElement[] FindAll(UIAutomationElement source)
     {
-        var found = source.Element.FindAll(Interop.UIAutomationClient.TreeScope.TreeScope_Descendants, _elementBy.SelfCondition!);
+        var found = source.Element.FindAll(TreeScope.TreeScope_Descendants, _elementBy.SelfCondition!);
         var result = new List<UIAutomationElement>();
         for (var i = 0; i < found.Length; i++)
             result.Add(new UIAutomationElement(found.GetElement(i)));

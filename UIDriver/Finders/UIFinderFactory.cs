@@ -9,48 +9,6 @@ public static class UIFinderFactory
         IFinder finder;
         finder = new SelfFinder(by);
 
-
-        // this logic not implemented at all. and that the most interesting part - we will talk about it later
-        if (by.AncestorOrParent != null)
-        {
-            if (by.IsChild)
-            {
-
-            }
-            else
-            {
-                new AncestorFinder(finder);
-            }
-        }
-        if (by.Children != null)
-        {
-
-        }
-        if (by.Descendants != null)
-        {
-
-        }
-        if (by.FollowingSiblings != null)
-        {
-
-        }
-        if (by.Following != null)
-        {
-
-        }
-        if (by.Preceding != null)
-        {
-
-        }
-        if (by.PrecedingSiblings != null)
-        {
-
-        }
-
-
-
-
-
         return finder;
     }
 }
