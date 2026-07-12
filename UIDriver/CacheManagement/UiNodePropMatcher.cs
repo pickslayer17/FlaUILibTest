@@ -1,6 +1,6 @@
 using Interop.UIAutomationClient;
 
-namespace FlaUILibTest;
+namespace UIDriver.CacheManagement;
 
 public sealed class UiNodePropMatcher
 {

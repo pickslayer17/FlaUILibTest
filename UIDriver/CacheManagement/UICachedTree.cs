@@ -34,12 +34,6 @@ public class UICachedTree
         return node;
     }
 
-    public static int[] SafeRunTimeId(IUIAutomationElement element)
-    {
-        try { return (int[])element.GetRuntimeId(); }
-        catch { return new int[0]; }
-    }
-
     private static string SafeString(IUIAutomationElement element, int propertyId)
     {
         try { return element.GetCachedPropertyValue(propertyId) as string; }

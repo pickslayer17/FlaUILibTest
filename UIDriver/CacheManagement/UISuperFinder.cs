@@ -1,6 +1,6 @@
 using UIDriver;
 using Interop.UIAutomationClient;
-using FlaUILibTest;
+using UIDriver.CacheManagement;
 
 class UISuperFinder
 {
