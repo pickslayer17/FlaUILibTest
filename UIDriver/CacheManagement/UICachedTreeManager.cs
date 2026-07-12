@@ -1,10 +1,18 @@
 using Interop.UIAutomationClient;
 using UIDriver;
-using UIDriver.Enums;
+using UIDriver.Constants;
 using UIDriver.Interfaces;
 
 public class UICachedTreeManager : IStructureChangedListener
 {
+    private static readonly int[] CachedProperties =
+    [
+        (int)UiaProperty.ControlType,
+        (int)UiaProperty.Name,
+        (int)UiaProperty.ClassName,
+        (int)UiaProperty.AutomationId
+    ];
+
     private readonly IUIAutomation _automation;
     private UICachedTree _cachedTree;
 
@@ -13,27 +21,25 @@ public class UICachedTreeManager : IStructureChangedListener
         _automation = automation;
     }
 
-    public void InitCachedTree(IUIAutomationElement desktop, IUIAutomationCondition windowCondition, int[] propertyIds)
+    public void InitCachedTree(IUIAutomationElement window)
     {
-        var cachedRequest = GetCacheRequest(TreeScope.TreeScope_Subtree, null, propertyIds);
-        var found = desktop.FindFirstBuildCache(TreeScope.TreeScope_Descendants, windowCondition, cachedRequest);
-        if (found != null)
-        {
-            _cachedTree = new UICachedTree(found);
-            return;
-        }
+        var cacheRequest = GetCacheRequest(CachedProperties);
+        var cachedWindow = window.BuildUpdatedCache(cacheRequest);
 
-        throw new Exception("Failed to initialize cached tree. No matching element found.");
+        _cachedTree = new UICachedTree(cachedWindow);
     }
 
-    public IUIAutomationCacheRequest GetCacheRequest(
-        TreeScope cacheTreeScope,
-        IUIAutomationCondition TreeFilter,
-        int[] propertyIds)
+    public UiNode Tree => _cachedTree.Tree;
+
+    public Task<UIAutomationElement> FindFirst(UIBy by)
+    {
+        return Task.FromResult<UIAutomationElement>(null!);
+    }
+
+    private IUIAutomationCacheRequest GetCacheRequest(int[] propertyIds)
     {
         var cacheRequest = _automation.CreateCacheRequest();
         cacheRequest.TreeScope = TreeScope.TreeScope_Subtree;
-        cacheRequest.TreeFilter = null;
         cacheRequest.AutomationElementMode = AutomationElementMode.AutomationElementMode_Full;
         foreach (var propertyId in propertyIds)
             cacheRequest.AddProperty(propertyId);
@@ -41,25 +47,10 @@ public class UICachedTreeManager : IStructureChangedListener
         return cacheRequest;
     }
 
-    public IUIAutomationElement FindFirst(TreeScope treeScope, IUIAutomationCondition condition, IUIAutomationCacheRequest cacheRequest)
-    {
-        var result = _cachedTree.CachedWindow.FindFirstBuildCache(treeScope, condition, cacheRequest);
-
-        return result;
-    }
-
-    public IUIAutomationElementArray FindAll(TreeScope treeScope, IUIAutomationCondition condition, IUIAutomationCacheRequest cacheRequest)
-    {
-        var result = _cachedTree.CachedWindow.FindAllBuildCache(treeScope, condition, cacheRequest);
-
-        return result;
-    }
-
     public void NotifyOnStructureChanged(UIAutomationElement source, StructureChangeType changeType, int[] runtimeId)
     {
         if (changeType == StructureChangeType.StructureChangeType_ChildrenInvalidated)
         {
-            var cacheRequest = GetCacheRequest(TreeScope.TreeScope_Subtree, null, [ (int)NativePropertyIds.UIA_NamePropertyId ]);
         }
     }
 }

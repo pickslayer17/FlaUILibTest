@@ -5,11 +5,15 @@ using UIDriver.Constants;
 public class UICachedTree
 {
     public IUIAutomationElement CachedWindow { get; }
+    public UiNode Tree { get; }
 
     public UICachedTree(IUIAutomationElement cachedWindow)
     {
         CachedWindow = cachedWindow;
+        Tree = BuildUINodeTree(cachedWindow, null);
     }
+
+    
 
     public static UiNode BuildUINodeTree(IUIAutomationElement element, UiNode parent)
     {

@@ -10,6 +10,7 @@ public sealed class WindowListener : IDisposable
     private const int UIA_Window_WindowOpenedEventId = 20016;
     private const int UIA_Window_WindowClosedEventId = 20017;
 
+    private readonly IUIAutomation _automation;
     private readonly IUIAutomationElement _window;
     private readonly RunTimeId _windowRunTimeId;
     private List<IStructureChangedListener> _structureChangedListeners = new();
@@ -30,10 +31,11 @@ public sealed class WindowListener : IDisposable
     private NativeAutomationEventHandler? _windowOpenedHandler;
     private NativeAutomationEventHandler? _windowClosedHandler;
 
-    public WindowListener(UIAutomationElement window)
+    public WindowListener(UIAutomationElement window, IUIAutomation automation)
     {
         _window = window.Element;
         _windowRunTimeId = window.RunTimeId;
+        _automation = automation;
     }
 
     public void RegisterStructureChangedListener(IStructureChangedListener structureChangedListener) => _structureChangedListeners.Add(structureChangedListener);
@@ -44,19 +46,17 @@ public sealed class WindowListener : IDisposable
 
     public void StartListening()
     {
-        var automation = UIAutomationProvider.Automation;
-
         _structureChangedHandler = new NativeStructureChangedHandler(OnStructureChanged);
-        automation.AddStructureChangedEventHandler(_window, TreeScope.TreeScope_Subtree, null, _structureChangedHandler);
+        _automation.AddStructureChangedEventHandler(_window, TreeScope.TreeScope_Subtree, null, _structureChangedHandler);
 
         _propertyChangedHandler = new NativePropertyChangedHandler(OnPropertyChanged);
-        automation.AddPropertyChangedEventHandler(_window, TreeScope.TreeScope_Subtree, null, _propertyChangedHandler, PropertiesToWatch());
+        _automation.AddPropertyChangedEventHandler(_window, TreeScope.TreeScope_Subtree, null, _propertyChangedHandler, PropertiesToWatch());
 
         _windowOpenedHandler = new NativeAutomationEventHandler(OnWindowOpened);
-        automation.AddAutomationEventHandler(UIA_Window_WindowOpenedEventId, _window, TreeScope.TreeScope_Subtree, null, _windowOpenedHandler);
+        _automation.AddAutomationEventHandler(UIA_Window_WindowOpenedEventId, _window, TreeScope.TreeScope_Subtree, null, _windowOpenedHandler);
 
         _windowClosedHandler = new NativeAutomationEventHandler(OnWindowClosed);
-        automation.AddAutomationEventHandler(UIA_Window_WindowClosedEventId, _window, TreeScope.TreeScope_Element, null, _windowClosedHandler);
+        _automation.AddAutomationEventHandler(UIA_Window_WindowClosedEventId, _window, TreeScope.TreeScope_Element, null, _windowClosedHandler);
     }
 
     private void OnStructureChanged(IUIAutomationElement element, StructureChangeType changeType, int[] runtimeId)

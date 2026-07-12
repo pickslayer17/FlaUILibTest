@@ -1,3 +1,4 @@
+using Interop.UIAutomationClient;
 using System.Collections.Concurrent;
 using UIDriver.Constants;
 using UIDriver.CustomModels;
@@ -8,8 +9,8 @@ public sealed class UIApplicationManager
 {
     public int ProcessId { get; set; }
 
+    private readonly IUIAutomation _automation;
     private readonly ConcurrentDictionary<RunTimeId, WindowContainer> _containers = new();
-    private readonly ConcurrentDictionary<Guid, Order> _orders = new();
     private readonly ToggleWindowListener _toggleWindowListener;
 
     private Lock _windowEventLock = new();
@@ -17,8 +18,9 @@ public sealed class UIApplicationManager
     private WindowContainer? _defaultContainer;
     private WindowContainer? _desktopContainer;
 
-    public UIApplicationManager()
+    public UIApplicationManager(IUIAutomation automation)
     {
+        _automation = automation;
         _toggleWindowListener = new ToggleWindowListener(this);
     }
 
@@ -30,12 +32,7 @@ public sealed class UIApplicationManager
     {
         lock (_windowEventLock)
         {
-            var container = ResolveContainer(by);
-            var order = RegisterOrder(by);
-
-            var task = container.SubmitOrderAsync(order);
-            order.Task = task;
-            return task;
+            return _defaultContainer!.SubmitOrderAsync(by);
         }
     }
 
@@ -53,7 +50,6 @@ public sealed class UIApplicationManager
             }
 
             CreateWindowContainer(window);
-            LogContainers();
         }
     }
 
@@ -80,21 +76,11 @@ public sealed class UIApplicationManager
 
     private void LogContainers()
     {
-    }
+        var snapshot = _containers.Values
+            .Select(container => (container.WindowTitle, container.CacheTreeManager.Tree))
+            .ToList();
 
-    private WindowContainer ResolveContainer(UIBy by) => by.Scope switch
-    {
-        WindowScope.Default => _defaultContainer!,
-        WindowScope.Desktop => _desktopContainer!,
-        _ => throw new NotImplementedException()
-    };
-
-    private Order RegisterOrder(UIBy by)
-    {
-        var order = new Order { By = by };
-        _orders.TryAdd(order.Id, order);
-        
-        return order;
+        Visualization.TreeVisualizer.Render(snapshot);
     }
 
     private void ReassignDefaultContainer()
@@ -115,7 +101,7 @@ public sealed class UIApplicationManager
         if(window.RunTimeId.State != RunTimeIdStates.Valid)
             throw new Exception($"Invalid window RuntimeId: {string.Join(",", window.RunTimeId)}");
 
-        var container = new WindowContainer(window);
+        var container = new WindowContainer(window, _automation);
         container.RegisterToggleWindowEvent(_toggleWindowListener);
         if(!_containers.TryAdd(window.RunTimeId, container))
             throw new Exception($"Failed to add window container for window [{string.Join(",", window.RunTimeId)}].");
