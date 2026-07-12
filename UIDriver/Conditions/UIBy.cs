@@ -13,6 +13,8 @@ public sealed class UIBy
 {
     public WindowScope Scope { get; init; } = WindowScope.Default;
 
+    public string? XPath { get; set; }
+
     public ConditionBase? Root { get; init; }
     public UIBy? AncestorOrParent { get; init; }
     public bool IsChild { get; init; }
