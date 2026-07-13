@@ -1,16 +1,16 @@
 using Interop.UIAutomationClient;
 using UIDriver;
 using UIDriver.Constants;
+using UIDriver.CustomModels;
 using UIDriver.Interfaces;
 
 public class UICachedTreeManager : IStructureChangedListener
 {
     private static readonly int[] CachedProperties =
     [
+        (int)UiaProperty.RuntimeId,
         (int)UiaProperty.ControlType,
-        (int)UiaProperty.Name,
-        (int)UiaProperty.ClassName,
-        (int)UiaProperty.AutomationId
+        (int)UiaProperty.Name
     ];
 
     private readonly IUIAutomation _automation;
@@ -51,6 +51,11 @@ public class UICachedTreeManager : IStructureChangedListener
     {
         if (changeType == StructureChangeType.StructureChangeType_ChildrenInvalidated)
         {
+            var node =_cachedTree.NodesByRunTimeId[new RunTimeId(runtimeId)];
+            var cacheRequest = GetCacheRequest(CachedProperties);
+            var updatedCachedElement = node.Element.BuildUpdatedCache(cacheRequest);
+            
+            _cachedTree.UpdateNode(node, updatedCachedElement);
         }
     }
 }

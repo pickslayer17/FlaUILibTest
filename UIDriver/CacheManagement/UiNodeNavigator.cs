@@ -123,8 +123,6 @@ class UiNodeNavigator : XPathNavigator
 
     public override string GetAttribute(string localName, string namespaceURI) => localName switch
     {
-        "AutomationId" => _currentElement.AutomationId ?? string.Empty,
-        "ClassName" => _currentElement.ClassName ?? string.Empty,
         "Name" => _currentElement.Name ?? string.Empty,
         "ControlType" => _currentElement.ControlType.ToString(),
         _ => string.Empty
@@ -164,8 +162,7 @@ class UiNodeNavigator : XPathNavigator
     private string GetAttributeValue(int attributeIndex) => attributeIndex switch
     {
         0 => _currentElement.Name ?? string.Empty,
-        1 => _currentElement.ClassName ?? string.Empty,
-        2 => _currentElement.AutomationId ?? string.Empty,
+        1 => _currentElement.ControlType.ToString(),
         _ => string.Empty
     };
 

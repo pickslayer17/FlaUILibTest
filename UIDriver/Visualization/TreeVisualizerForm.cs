@@ -45,7 +45,7 @@ public sealed class TreeVisualizerForm : Form
     {
         if (node == null) return null;
 
-        var label = $"[{node.ControlType}] name='{node.Name}' class='{node.ClassName}' aid='{node.AutomationId}'";
+        var label = $"[{node.ControlType}] name='{node.Name}'";
         var treeNode = new TreeNode(label);
 
         foreach (var child in node.Children ?? [])

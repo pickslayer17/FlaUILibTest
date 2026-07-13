@@ -13,8 +13,6 @@ public sealed class RunTimeId
             {
                 if (Id[0] == (int)RunTimeIdStates.ErrorTryingGet) return RunTimeIdStates.ErrorTryingGet;
                 if (Id[0] == (int)RunTimeIdStates.Null) return RunTimeIdStates.Null;
-
-                throw new NotImplementedException("Unexpected single-element RuntimeId value: " + Id[0]);
             }
 
             return RunTimeIdStates.Valid;
@@ -22,9 +20,12 @@ public sealed class RunTimeId
     }
     public int[] Id { get; init; }
 
+    private readonly int _hashCode;
+
     public RunTimeId(int[] id)
     {
         Id = id ?? [(int)RunTimeIdStates.Null];
+        _hashCode = ComputeHashCode(Id);
     }
 
     public RunTimeId(IUIAutomationElement element)
@@ -38,16 +39,19 @@ public sealed class RunTimeId
         {
         }
         Id = runtimeId;
+        _hashCode = ComputeHashCode(Id);
     }
 
     public override string ToString() => string.Join(",", Id);
 
     public override bool Equals(object? obj) => obj is RunTimeId other && Id.SequenceEqual(other.Id);
 
-    public override int GetHashCode()
+    public override int GetHashCode() => _hashCode;
+
+    private static int ComputeHashCode(int[] id)
     {
         var hash = new HashCode();
-        foreach (var part in Id) hash.Add(part);
+        foreach (var part in id) hash.Add(part);
         return hash.ToHashCode();
     }
 }
