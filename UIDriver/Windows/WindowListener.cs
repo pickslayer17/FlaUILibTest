@@ -7,9 +7,6 @@ namespace UIDriver;
 
 public sealed class WindowListener : IDisposable
 {
-    private const int UIA_Window_WindowOpenedEventId = 20016;
-    private const int UIA_Window_WindowClosedEventId = 20017;
-
     private readonly IUIAutomation _automation;
     private readonly IUIAutomationElement _window;
     private readonly RunTimeId _windowRunTimeId;
@@ -53,10 +50,10 @@ public sealed class WindowListener : IDisposable
         _automation.AddPropertyChangedEventHandler(_window, TreeScope.TreeScope_Subtree, null, _propertyChangedHandler, PropertiesToWatch());
 
         _windowOpenedHandler = new NativeAutomationEventHandler(OnWindowOpened);
-        _automation.AddAutomationEventHandler(UIA_Window_WindowOpenedEventId, _window, TreeScope.TreeScope_Subtree, null, _windowOpenedHandler);
+        _automation.AddAutomationEventHandler((int)UiaEvent.WindowOpened, _window, TreeScope.TreeScope_Subtree, null, _windowOpenedHandler);
 
         _windowClosedHandler = new NativeAutomationEventHandler(OnWindowClosed);
-        _automation.AddAutomationEventHandler(UIA_Window_WindowClosedEventId, _window, TreeScope.TreeScope_Element, null, _windowClosedHandler);
+        _automation.AddAutomationEventHandler((int)UiaEvent.WindowClosed, _window, TreeScope.TreeScope_Element, null, _windowClosedHandler);
     }
 
     private void OnStructureChanged(IUIAutomationElement element, StructureChangeType changeType, int[] runtimeId)
