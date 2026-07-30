@@ -36,7 +36,6 @@ public sealed class UIApplicationManager
         }
     }
 
-    // Lock method. all changing of _containers are inside these 2 methods. Dont want to handle it right now. but i think non-locked code should be separated from lock-mechanism in the future
     public void NotifyWindowOpened(UIAutomationElement window)
     {
         lock (_windowEventLock)
@@ -53,7 +52,6 @@ public sealed class UIApplicationManager
         }
     }
 
-    // Lock method
     public void NotifyWindowClosed(RunTimeId id)
     {
         lock (_windowEventLock)
@@ -99,7 +97,7 @@ public sealed class UIApplicationManager
     private WindowContainer CreateWindowContainer(UIAutomationElement window)
     {
         if(window.RunTimeId.State != RunTimeIdStates.Valid)
-            throw new Exception($"Invalid window RuntimeId: {string.Join(",", window.RunTimeId)}");
+            throw new Exception($"Invalid window RuntimeId: {string.Join(",", window.ToString())}");
 
         var container = new WindowContainer(window, _automation);
         container.RegisterToggleWindowEvent(_toggleWindowListener);

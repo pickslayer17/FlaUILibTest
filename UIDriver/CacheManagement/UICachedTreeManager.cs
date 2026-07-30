@@ -46,16 +46,47 @@ public class UICachedTreeManager : IStructureChangedListener
 
         return cacheRequest;
     }
-
+    public Lock notifyLock = new Lock();
     public void NotifyOnStructureChanged(UIAutomationElement source, StructureChangeType changeType, int[] runtimeId)
     {
-        if (changeType == StructureChangeType.StructureChangeType_ChildrenInvalidated)
+        lock (notifyLock)
         {
-            var node =_cachedTree.NodesByRunTimeId[new RunTimeId(runtimeId)];
-            var cacheRequest = GetCacheRequest(CachedProperties);
-            var updatedCachedElement = node.Element.BuildUpdatedCache(cacheRequest);
-            
-            _cachedTree.UpdateNode(node, updatedCachedElement);
+            var a = source.Element.CurrentName;
+            var b = source.Element.CurrentControlType;
+            var c = source.Element.CurrentClassName;
+            Console.WriteLine("-------------------");
+            Console.WriteLine("Name "+ a);
+            Console.WriteLine("Control Type " + b);
+            Console.WriteLine("ClassName " + c);
+            Console.WriteLine("source RTid "+ source.RunTimeId);
+            Console.WriteLine("ct"+changeType.ToString());
+            Console.WriteLine("add RTid"+new RunTimeId(runtimeId));
+            Console.WriteLine("-------------------");
+            return;
+            if (changeType == StructureChangeType.StructureChangeType_ChildrenInvalidated)
+            {
+                var node = _cachedTree.NodesByRunTimeId[source.RunTimeId];
+                var cacheRequest = GetCacheRequest(CachedProperties);
+                var updatedCachedElement = node.Element.BuildUpdatedCache(cacheRequest);
+
+                _cachedTree.UpdateNode(node, updatedCachedElement);
+            }
+            if (changeType == StructureChangeType.StructureChangeType_ChildAdded)
+            {
+                var node = _cachedTree.NodesByRunTimeId[source.RunTimeId];
+                var cacheRequest = GetCacheRequest(CachedProperties);
+                var updatedCachedElement = node.Element.BuildUpdatedCache(cacheRequest);
+
+                _cachedTree.UpdateNode(node, updatedCachedElement);
+            }
+            if (changeType == StructureChangeType.StructureChangeType_ChildRemoved)
+            {
+                var node = _cachedTree.NodesByRunTimeId[source.RunTimeId];
+                var cacheRequest = GetCacheRequest(CachedProperties);
+                var updatedCachedElement = node.Element.BuildUpdatedCache(cacheRequest);
+
+                _cachedTree.UpdateNode(node, updatedCachedElement);
+            }
         }
     }
 }

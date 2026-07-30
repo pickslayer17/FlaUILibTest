@@ -30,16 +30,29 @@ public sealed class RunTimeId
 
     public RunTimeId(IUIAutomationElement element)
     {
-        int[] runtimeId = [(int)RunTimeIdStates.ErrorTryingGet];
+        Id = GetRunTimeId(element);
+        _hashCode = ComputeHashCode(Id);
+    }
+
+    private static int[] GetRunTimeId(IUIAutomationElement element)
+    {
         try
         {
-            runtimeId = (int[]?)element.GetRuntimeId() ?? [(int)RunTimeIdStates.Null];
+            if (element.GetCachedPropertyValue((int)UiaProperty.RuntimeId) is int[] cached)
+                return cached;
         }
         catch
         {
         }
-        Id = runtimeId;
-        _hashCode = ComputeHashCode(Id);
+
+        try
+        {
+            return (int[]?)element.GetRuntimeId() ?? [(int)RunTimeIdStates.Null];
+        }
+        catch
+        {
+            return [(int)RunTimeIdStates.ErrorTryingGet];
+        }
     }
 
     public override string ToString() => string.Join(",", Id);

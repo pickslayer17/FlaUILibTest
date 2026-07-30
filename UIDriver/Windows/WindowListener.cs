@@ -43,8 +43,12 @@ public sealed class WindowListener : IDisposable
 
     public void StartListening()
     {
+        var structureCacheRequest = _automation.CreateCacheRequest();
+        structureCacheRequest.TreeScope = TreeScope.TreeScope_Element | TreeScope.TreeScope_Children;
+        structureCacheRequest.AddProperty((int)UiaProperty.RuntimeId);
+
         _structureChangedHandler = new NativeStructureChangedHandler(OnStructureChanged);
-        _automation.AddStructureChangedEventHandler(_window, TreeScope.TreeScope_Subtree, null, _structureChangedHandler);
+        _automation.AddStructureChangedEventHandler(_window, TreeScope.TreeScope_Subtree, structureCacheRequest, _structureChangedHandler);
 
         _propertyChangedHandler = new NativePropertyChangedHandler(OnPropertyChanged);
         _automation.AddPropertyChangedEventHandler(_window, TreeScope.TreeScope_Subtree, null, _propertyChangedHandler, PropertiesToWatch());
