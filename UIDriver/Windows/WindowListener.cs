@@ -44,7 +44,7 @@ public sealed class WindowListener : IDisposable
     public void StartListening()
     {
         var structureCacheRequest = _automation.CreateCacheRequest();
-        structureCacheRequest.TreeScope = TreeScope.TreeScope_Element | TreeScope.TreeScope_Children;
+        structureCacheRequest.TreeScope = TreeScope.TreeScope_Subtree;
         structureCacheRequest.AddProperty((int)UiaProperty.RuntimeId);
 
         _structureChangedHandler = new NativeStructureChangedHandler(OnStructureChanged);

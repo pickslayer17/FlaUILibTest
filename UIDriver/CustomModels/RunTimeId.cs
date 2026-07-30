@@ -9,6 +9,11 @@ public sealed class RunTimeId
     {
         get
         {
+            if (Id.Length == 0)
+            {
+                return RunTimeIdStates.Empty;
+            }
+
             if (Id.Length == 1)
             {
                 if (Id[0] == (int)RunTimeIdStates.ErrorTryingGet) return RunTimeIdStates.ErrorTryingGet;
