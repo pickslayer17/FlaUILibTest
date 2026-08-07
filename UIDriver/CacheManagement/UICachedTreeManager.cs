@@ -1,6 +1,5 @@
 using Interop.UIAutomationClient;
 using UIDriver;
-using UIDriver.Constants;
 using UIDriver.CustomModels;
 using UIDriver.Interfaces;
 
@@ -51,40 +50,55 @@ public class UICachedTreeManager : IStructureChangedListener
     {
         lock (notifyLock)
         {
-            var a = source.Element.CurrentName;
-            var b = source.Element.CurrentControlType;
-            var c = source.Element.CurrentClassName;
-            var d = new RunTimeId(source.Element.GetRuntimeId());
-            Console.WriteLine("-------------------");
-            Console.WriteLine("Name "+ a);
-            Console.WriteLine("Control Type " + b);
-            Console.WriteLine("ClassName " + c);
-            Console.WriteLine("source RTid state " + d.State);
-            Console.WriteLine("source RTid " + d);
-            Console.WriteLine("cached source RTid "+ source.RunTimeId);
-            Console.WriteLine("ct"+changeType.ToString());
-            Console.WriteLine("add RTid"+new RunTimeId(runtimeId));
-            Console.WriteLine("-------------------");
-            return;
-            if (changeType == StructureChangeType.StructureChangeType_ChildrenInvalidated)
-            {
-                return;
-            }
-            if (changeType == StructureChangeType.StructureChangeType_ChildAdded)
-            {
-                var node = _cachedTree.NodesByRunTimeId[source.RunTimeId];
-                var cacheRequest = GetCacheRequest(CachedProperties);
-                var updatedCachedElement = node.Element.BuildUpdatedCache(cacheRequest);
+            var targetRID = runtimeId;
+            var sourceRID = source.Element.GetRuntimeId();
+            var sourceValid = sourceRID != null && sourceRID.Length > 0;
+            var targetValid = targetRID != null && targetRID.Length > 0;
+            bool anyValid = sourceValid || targetValid;
+            bool sourceAndTargetAreEquals = false;
+            bool sourceRIDExistsInCache = false;
+            bool targetRIDExistsInCache = false;
 
-                _cachedTree.UpdateNode(node, updatedCachedElement);
-            }
-            if (changeType == StructureChangeType.StructureChangeType_ChildRemoved)
+            switch (changeType)
             {
-                var node = _cachedTree.NodesByRunTimeId[source.RunTimeId];
-                var cacheRequest = GetCacheRequest(CachedProperties);
-                var updatedCachedElement = node.Element.BuildUpdatedCache(cacheRequest);
-
-                _cachedTree.UpdateNode(node, updatedCachedElement);
+                case StructureChangeType.StructureChangeType_ChildAdded:
+                    if (anyValid)
+                    {
+                        if (sourceValid)
+                        {
+                            if (targetValid)
+                            {
+                                if (sourceRID.SequenceEqual(targetRID))
+                                {
+                                    sourceAndTargetAreEquals = true;
+                                    sourceRIDExistsInCache = _cachedTree.NodesByRunTimeId.TryGetValue(new RunTimeId(sourceRID), out _);
+                                    targetRIDExistsInCache = _cachedTree.NodesByRunTimeId.TryGetValue(new RunTimeId(targetRID), out _);
+                                }
+                                else
+                                {
+                                    sourceRIDExistsInCache = _cachedTree.NodesByRunTimeId.TryGetValue(new RunTimeId(sourceRID), out _);
+                                    targetRIDExistsInCache = _cachedTree.NodesByRunTimeId.TryGetValue(new RunTimeId(targetRID), out _);
+                                }
+                            }
+                            else
+                            {
+                                sourceRIDExistsInCache = _cachedTree.NodesByRunTimeId.TryGetValue(new RunTimeId(sourceRID), out _);
+                            }
+                        }
+                    }
+                    break;
+                case StructureChangeType.StructureChangeType_ChildRemoved:
+                    break;
+                case StructureChangeType.StructureChangeType_ChildrenInvalidated:
+                    break;
+                case StructureChangeType.StructureChangeType_ChildrenReordered:
+                    break;
+                case StructureChangeType.StructureChangeType_ChildrenBulkRemoved:
+                    break;
+                case StructureChangeType.StructureChangeType_ChildrenBulkAdded:
+                    break;
+                default:
+                    throw new NotImplementedException();
             }
         }
     }

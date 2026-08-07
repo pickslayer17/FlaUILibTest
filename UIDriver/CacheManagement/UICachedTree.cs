@@ -1,6 +1,5 @@
 using Interop.UIAutomationClient;
 using UIDriver;
-using UIDriver.Constants;
 using UIDriver.CustomModels;
 
 public class UICachedTree
