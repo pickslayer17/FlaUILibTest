@@ -55,9 +55,7 @@ public class UICachedTreeManager : IStructureChangedListener
             var sourceValid = sourceRID != null && sourceRID.Length > 0;
             var targetValid = targetRID != null && targetRID.Length > 0;
             bool anyValid = sourceValid || targetValid;
-            bool sourceAndTargetAreEquals = false;
-            bool sourceRIDExistsInCache = false;
-            bool targetRIDExistsInCache = false;
+            bool? sourceAndTargetAreEquals = false;
 
             switch (changeType)
             {
@@ -68,24 +66,23 @@ public class UICachedTreeManager : IStructureChangedListener
                         {
                             if (targetValid)
                             {
+
                                 if (sourceRID.SequenceEqual(targetRID))
                                 {
                                     sourceAndTargetAreEquals = true;
-                                    sourceRIDExistsInCache = _cachedTree.NodesByRunTimeId.TryGetValue(new RunTimeId(sourceRID), out _);
-                                    targetRIDExistsInCache = _cachedTree.NodesByRunTimeId.TryGetValue(new RunTimeId(targetRID), out _);
                                 }
                                 else
                                 {
-                                    sourceRIDExistsInCache = _cachedTree.NodesByRunTimeId.TryGetValue(new RunTimeId(sourceRID), out _);
-                                    targetRIDExistsInCache = _cachedTree.NodesByRunTimeId.TryGetValue(new RunTimeId(targetRID), out _);
+                                    sourceAndTargetAreEquals= false;
                                 }
                             }
                             else
                             {
-                                sourceRIDExistsInCache = _cachedTree.NodesByRunTimeId.TryGetValue(new RunTimeId(sourceRID), out _);
                             }
                         }
                     }
+
+                    Console.WriteLine( $"{sourceValid}, {targetValid}, {sourceAndTargetAreEquals}");
                     break;
                 case StructureChangeType.StructureChangeType_ChildRemoved:
                     break;

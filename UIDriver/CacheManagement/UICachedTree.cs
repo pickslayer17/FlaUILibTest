@@ -5,7 +5,6 @@ using UIDriver.CustomModels;
 public class UICachedTree
 {
     public UiNode Tree { get; }
-    public Dictionary<RunTimeId, UiNode> NodesByRunTimeId { get; } = new();
 
     public UICachedTree(IUIAutomationElement cachedWindow)
     {
@@ -22,9 +21,6 @@ public class UICachedTree
             ControlType = SafeInt(element, (int)UiaProperty.ControlType),
             Name = SafeString(element, (int)UiaProperty.Name)
         };
-
-        if (!NodesByRunTimeId.TryAdd(node.RunTimeId, node))
-            throw new InvalidOperationException($"Duplicate RuntimeId in cached tree: {node.RunTimeId}");
 
         var children = new List<UiNode>();
         var cachedChildren = element.GetCachedChildren();
@@ -51,9 +47,7 @@ public class UICachedTree
     private void RemoveSubtree(UiNode node)
     {
         UnlinkChildFromParent(node, node.Parent);
-
         node.Parent = null;
-        NodesByRunTimeId.Remove(node.RunTimeId);
 
         foreach (var child in node.Children ?? [])
             RemoveSubtree(child);
