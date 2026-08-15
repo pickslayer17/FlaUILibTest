@@ -11,28 +11,82 @@ public class UICachedTree
         Tree = BuildUINodeTree(cachedWindow, null);
     }
 
+    private int _nodeCount;
+    private long _runtimeIdTicks;
+    private long _controlTypeTicks;
+    private long _nameTicks;
+    private long _getChildrenTicks;
+    private long _getElementTicks;
+
     public UiNode BuildUINodeTree(IUIAutomationElement element, UiNode parent)
     {
+        _nodeCount = 0;
+        _runtimeIdTicks = 0;
+        _controlTypeTicks = 0;
+        _nameTicks = 0;
+        _getChildrenTicks = 0;
+        _getElementTicks = 0;
+
+        var node = BuildUINodeTreeCore(element, parent);
+
+        Console.WriteLine(
+            $"  nodes={_nodeCount} | " +
+            $"RuntimeId={TicksToMs(_runtimeIdTicks)}ms | " +
+            $"ControlType={TicksToMs(_controlTypeTicks)}ms | " +
+            $"Name={TicksToMs(_nameTicks)}ms | " +
+            $"GetCachedChildren={TicksToMs(_getChildrenTicks)}ms | " +
+            $"GetElement={TicksToMs(_getElementTicks)}ms");
+
+        return node;
+    }
+
+    private UiNode BuildUINodeTreeCore(IUIAutomationElement element, UiNode parent)
+    {
+        _nodeCount++;
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var runtimeId = SafeRunTimeId(element);
+        _runtimeIdTicks += sw.ElapsedTicks;
+
+        sw.Restart();
+        var controlType = SafeInt(element, (int)UiaProperty.ControlType);
+        _controlTypeTicks += sw.ElapsedTicks;
+
+        sw.Restart();
+        var name = SafeString(element, (int)UiaProperty.Name);
+        _nameTicks += sw.ElapsedTicks;
+
         var node = new UiNode
         {
             Parent = parent,
             Element = element,
-            RunTimeId = SafeRunTimeId(element),
-            ControlType = SafeInt(element, (int)UiaProperty.ControlType),
-            Name = SafeString(element, (int)UiaProperty.Name)
+            RunTimeId = runtimeId,
+            ControlType = controlType,
+            Name = name
         };
 
         var children = new List<UiNode>();
+
+        sw.Restart();
         var cachedChildren = element.GetCachedChildren();
-        if (cachedChildren != null)
+        var childCount = cachedChildren?.Length ?? 0;
+        _getChildrenTicks += sw.ElapsedTicks;
+
+        for (var i = 0; i < childCount && cachedChildren != null; i++)
         {
-            for (var i = 0; i < cachedChildren.Length; i++)
-                children.Add(BuildUINodeTree(cachedChildren.GetElement(i), node));
+            sw.Restart();
+            var childElement = cachedChildren.GetElement(i);
+            _getElementTicks += sw.ElapsedTicks;
+
+            children.Add(BuildUINodeTreeCore(childElement, node));
         }
 
         node.Children = children.ToArray();
         return node;
     }
+
+    private static double TicksToMs(long ticks) =>
+        Math.Round(ticks * 1000.0 / System.Diagnostics.Stopwatch.Frequency, 1);
 
     public void Remove(UiNode node)
     {

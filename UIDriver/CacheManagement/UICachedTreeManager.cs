@@ -15,6 +15,7 @@ public class UICachedTreeManager : IStructureChangedListener
     private readonly IUIAutomation _automation;
     private UICachedTree _cachedTree;
     private IUIAutomationElement _cachedWindow;
+    private readonly List<UiNode> _collectedTrees = [];
 
     public UICachedTreeManager(IUIAutomation automation)
     {
@@ -52,15 +53,16 @@ public class UICachedTreeManager : IStructureChangedListener
         lock (notifyLock)
         {
             var sourceRID = source.Element.GetCachedPropertyValue((int)UiaProperty.RuntimeId) as int[];
-            var targetRID = runtimeId;
 
             switch (changeType)
             {
                 case StructureChangeType.StructureChangeType_ChildAdded:
+                    HandleChildAdded(source);
                     break;
                 case StructureChangeType.StructureChangeType_ChildRemoved:
                     break;
                 case StructureChangeType.StructureChangeType_ChildrenInvalidated:
+                    HandleChildrenInvalidated(source, sourceRID);
                     break;
                 case StructureChangeType.StructureChangeType_ChildrenReordered:
                     break;
@@ -72,5 +74,34 @@ public class UICachedTreeManager : IStructureChangedListener
                     throw new NotImplementedException();
             }
         }
+    }
+
+    private void HandleChildAdded(UIAutomationElement addedChild)
+    {
+        var parentElement = _automation.RawViewWalker.GetParentElement(addedChild.Element);
+        var parentNode = new UiNode { Element = parentElement };
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var addedChildTree = _cachedTree.BuildUINodeTree(addedChild.Element, parentNode);
+        stopwatch.Stop();
+        Console.WriteLine($"ADDED: BuildUINodeTree took {stopwatch.ElapsedMilliseconds} ms");
+
+        _collectedTrees.Add(addedChildTree);
+    }
+
+    private void HandleChildrenInvalidated(UIAutomationElement invalidatedParent, int[]? sourceRID)
+    {
+        if(sourceRID == null || sourceRID.Length == 0)
+            return;
+
+        var cacheRequest = GetCacheRequest(CachedProperties);
+        invalidatedParent.Element.BuildUpdatedCache(cacheRequest);
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var invalidatedParentTree = _cachedTree.BuildUINodeTree(invalidatedParent.Element, null);
+        stopwatch.Stop();
+        Console.WriteLine($"INVALIDATED: BuildUINodeTree took {stopwatch.ElapsedMilliseconds} ms");
+
+        _collectedTrees.Add(invalidatedParentTree);
     }
 }
