@@ -32,4 +32,10 @@ public static class TreeVisualizer
         EnsureStarted();
         _form!.Render(containers);
     }
+
+    public static void AddTree(string title, UiNode tree)
+    {
+        EnsureStarted();
+        _form!.AddTree(title, tree);
+    }
 }

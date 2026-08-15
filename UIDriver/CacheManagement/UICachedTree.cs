@@ -29,14 +29,6 @@ public class UICachedTree
 
         var node = BuildUINodeTreeCore(element, parent);
 
-        Console.WriteLine(
-            $"  nodes={_nodeCount} | " +
-            $"RuntimeId={TicksToMs(_runtimeIdTicks)}ms | " +
-            $"ControlType={TicksToMs(_controlTypeTicks)}ms | " +
-            $"Name={TicksToMs(_nameTicks)}ms | " +
-            $"GetCachedChildren={TicksToMs(_getChildrenTicks)}ms | " +
-            $"GetElement={TicksToMs(_getElementTicks)}ms");
-
         return node;
     }
 

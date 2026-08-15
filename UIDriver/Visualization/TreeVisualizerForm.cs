@@ -1,4 +1,5 @@
 using System.Windows.Forms;
+using UIDriver.CustomModels;
 
 namespace UIDriver.Visualization;
 
@@ -41,11 +42,32 @@ public sealed class TreeVisualizerForm : Form
         }
     }
 
+    public void AddTree(string title, UiNode tree)
+    {
+        if (InvokeRequired)
+        {
+            BeginInvoke(() => AddTree(title, tree));
+            return;
+        }
+
+        var page = new TabPage(string.IsNullOrEmpty(title) ? "(no title)" : title);
+        var treeView = new TreeView { Dock = DockStyle.Fill };
+
+        var root = BuildTreeNode(tree);
+        if (root != null)
+            treeView.Nodes.Add(root);
+        treeView.ExpandAll();
+
+        page.Controls.Add(treeView);
+        _tabControl.TabPages.Add(page);
+        _tabControl.SelectedTab = page;
+    }
+
     private static TreeNode? BuildTreeNode(UiNode node)
     {
         if (node == null) return null;
 
-        var label = $"[{node.ControlType}] name='{node.Name}'";
+        var label = $"[{ControlTypeName(node.ControlType)}] name='{node.Name}' [{RuntimeIdHex(node.RunTimeId)}]";
         var treeNode = new TreeNode(label);
 
         foreach (var child in node.Children ?? [])
@@ -56,5 +78,18 @@ public sealed class TreeVisualizerForm : Form
         }
 
         return treeNode;
+    }
+
+    private static string ControlTypeName(int controlType)
+    {
+        return Enum.IsDefined(typeof(UiaControlType), controlType)
+            ? ((UiaControlType)controlType).ToString()
+            : controlType.ToString();
+    }
+
+    private static string RuntimeIdHex(RunTimeId runTimeId)
+    {
+        var id = runTimeId?.Id ?? [];
+        return string.Join(",", id.Select(part => part.ToString("X")));
     }
 }

@@ -73,7 +73,17 @@ public class UICachedTreeManager : IStructureChangedListener
                 default:
                     throw new NotImplementedException();
             }
+
+            Console.WriteLine($"iteration={_collectedTrees.Count} | source=[{ToHex(sourceRID)}] | target=[{ToHex(runtimeId)}]");
         }
+    }
+
+    private static string ToHex(int[]? runtimeId)
+    {
+        if (runtimeId == null)
+            return "";
+
+        return string.Join(",", runtimeId.Select(part => part.ToString("X")));
     }
 
     private void HandleChildAdded(UIAutomationElement addedChild)
@@ -87,6 +97,7 @@ public class UICachedTreeManager : IStructureChangedListener
         Console.WriteLine($"ADDED: BuildUINodeTree took {stopwatch.ElapsedMilliseconds} ms");
 
         _collectedTrees.Add(addedChildTree);
+        PushTreeToVisualizer($"ADDED #{_collectedTrees.Count} [{addedChildTree.RunTimeId}]", addedChildTree);
     }
 
     private void HandleChildrenInvalidated(UIAutomationElement invalidatedParent, int[]? sourceRID)
@@ -103,5 +114,11 @@ public class UICachedTreeManager : IStructureChangedListener
         Console.WriteLine($"INVALIDATED: BuildUINodeTree took {stopwatch.ElapsedMilliseconds} ms");
 
         _collectedTrees.Add(invalidatedParentTree);
+        PushTreeToVisualizer($"INVALIDATED #{_collectedTrees.Count} [{invalidatedParentTree.RunTimeId}]", invalidatedParentTree);
+    }
+
+    private void PushTreeToVisualizer(string title, UiNode tree)
+    {
+        Task.Run(() => UIDriver.Visualization.TreeVisualizer.AddTree(title, tree));
     }
 }
