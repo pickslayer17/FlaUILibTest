@@ -1,5 +1,4 @@
 using System.Windows.Forms;
-using UIDriver.CustomModels;
 
 namespace UIDriver.Visualization;
 
@@ -67,7 +66,7 @@ public sealed class TreeVisualizerForm : Form
     {
         if (node == null) return null;
 
-        var label = $"[{ControlTypeName(node.ControlType)}] name='{node.Name}' [{RuntimeIdHex(node.RunTimeId)}]";
+        var label = $"[{ControlTypeName(node.ControlType)}] name='{node.Name}' [{node.RunTimeId?.ToHexString()}]";
         var treeNode = new TreeNode(label);
 
         foreach (var child in node.Children ?? [])
@@ -85,11 +84,5 @@ public sealed class TreeVisualizerForm : Form
         return Enum.IsDefined(typeof(UiaControlType), controlType)
             ? ((UiaControlType)controlType).ToString()
             : controlType.ToString();
-    }
-
-    private static string RuntimeIdHex(RunTimeId runTimeId)
-    {
-        var id = runTimeId?.Id ?? [];
-        return string.Join(",", id.Select(part => part.ToString("X")));
     }
 }

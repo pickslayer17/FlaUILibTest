@@ -62,6 +62,8 @@ public sealed class RunTimeId
 
     public override string ToString() => string.Join(",", Id);
 
+    public string ToHexString() => string.Join(",", Id.Select(part => part.ToString("X")));
+
     public override bool Equals(object? obj) => obj is RunTimeId other && Id.SequenceEqual(other.Id);
 
     public override int GetHashCode() => _hashCode;
