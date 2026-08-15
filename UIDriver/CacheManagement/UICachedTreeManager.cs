@@ -114,7 +114,7 @@ public class UICachedTreeManager : IStructureChangedListener
         Console.WriteLine($"INVALIDATED: BuildUINodeTree took {stopwatch.ElapsedMilliseconds} ms");
 
         _collectedTrees.Add(invalidatedParentTree);
-        PushTreeToVisualizer($"INVALIDATED #{_collectedTrees.Count} [{invalidatedParentTree.RunTimeId}]", invalidatedParentTree);
+        PushTreeToVisualizer($"INVALIDATED #{_collectedTrees.Count} [{invalidatedParentTree.RunTimeId.ToHexString()}]", invalidatedParentTree);
     }
 
     private void PushTreeToVisualizer(string title, UiNode tree)
