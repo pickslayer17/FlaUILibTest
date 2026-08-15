@@ -97,7 +97,7 @@ public class UICachedTreeManager : IStructureChangedListener
         Console.WriteLine($"ADDED: BuildUINodeTree took {stopwatch.ElapsedMilliseconds} ms");
 
         _collectedTrees.Add(addedChildTree);
-        PushTreeToVisualizer($"ADDED #{_collectedTrees.Count} [{addedChildTree.RunTimeId.ToHexString()}]", addedChildTree);
+        PushTreeToVisualizer($"ADDED #{_collectedTrees.Count} [{new RunTimeId(parentElement).ToHexString()}]", addedChildTree);
     }
 
     private void HandleChildrenInvalidated(UIAutomationElement invalidatedParent, int[]? sourceRID)
