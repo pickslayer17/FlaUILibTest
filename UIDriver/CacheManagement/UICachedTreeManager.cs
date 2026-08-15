@@ -14,6 +14,7 @@ public class UICachedTreeManager : IStructureChangedListener
 
     private readonly IUIAutomation _automation;
     private UICachedTree _cachedTree;
+    private IUIAutomationElement _cachedWindow;
 
     public UICachedTreeManager(IUIAutomation automation)
     {
@@ -23,9 +24,9 @@ public class UICachedTreeManager : IStructureChangedListener
     public void InitCachedTree(IUIAutomationElement window)
     {
         var cacheRequest = GetCacheRequest(CachedProperties);
-        var cachedWindow = window.BuildUpdatedCache(cacheRequest);
+        _cachedWindow = window.BuildUpdatedCache(cacheRequest);
 
-        _cachedTree = new UICachedTree(cachedWindow);
+        _cachedTree = new UICachedTree(_cachedWindow);
     }
 
     public UiNode Tree => _cachedTree.Tree;
@@ -50,39 +51,12 @@ public class UICachedTreeManager : IStructureChangedListener
     {
         lock (notifyLock)
         {
+            var sourceRID = source.Element.GetCachedPropertyValue((int)UiaProperty.RuntimeId) as int[];
             var targetRID = runtimeId;
-            var sourceRID = source.Element.GetRuntimeId();
-            var sourceValid = sourceRID != null && sourceRID.Length > 0;
-            var targetValid = targetRID != null && targetRID.Length > 0;
-            bool anyValid = sourceValid || targetValid;
-            bool? sourceAndTargetAreEquals = false;
 
             switch (changeType)
             {
                 case StructureChangeType.StructureChangeType_ChildAdded:
-                    if (anyValid)
-                    {
-                        if (sourceValid)
-                        {
-                            if (targetValid)
-                            {
-
-                                if (sourceRID.SequenceEqual(targetRID))
-                                {
-                                    sourceAndTargetAreEquals = true;
-                                }
-                                else
-                                {
-                                    sourceAndTargetAreEquals= false;
-                                }
-                            }
-                            else
-                            {
-                            }
-                        }
-                    }
-
-                    Console.WriteLine( $"{sourceValid}, {targetValid}, {sourceAndTargetAreEquals}");
                     break;
                 case StructureChangeType.StructureChangeType_ChildRemoved:
                     break;

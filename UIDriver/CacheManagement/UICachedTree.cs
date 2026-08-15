@@ -34,14 +34,34 @@ public class UICachedTree
         return node;
     }
 
-    public void UpdateNode(UiNode oldNode, IUIAutomationElement updatedElement)
+    public void Remove(UiNode node)
     {
-        var parent = oldNode.Parent;
-        RemoveSubtree(oldNode);
+        RemoveSubtree(node);
+    }
 
-        var newSubTree = BuildUINodeTree(updatedElement, parent);
+    public void AddNode(UiNode parent, UiNode node)
+    {
+        node.Parent = parent;
+        LinkChildToParent(node, parent);
+    }
 
-        LinkChildToParent(newSubTree, parent);
+    public UiNode? GetNode(Func<UiNode, bool> condition)
+    {
+        return FindNode(Tree, condition);
+    }
+
+    private static UiNode? FindNode(UiNode node, Func<UiNode, bool> condition)
+    {
+        if (node == null) return null;
+        if (condition(node)) return node;
+
+        foreach (var child in node.Children ?? [])
+        {
+            var match = FindNode(child, condition);
+            if (match != null) return match;
+        }
+
+        return null;
     }
 
     private void RemoveSubtree(UiNode node)
