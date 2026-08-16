@@ -150,10 +150,38 @@ public class UICachedTreeManager : IStructureChangedListener
 
     public void PrintCollectedTreesParents()
     {
-        foreach (var branch in _collectedBranches)
+        for (var i = 0; i < _collectedBranches.Count; i++)
         {
+            var branch = _collectedBranches[i];
             var top = branch is HeeledBranch heeled ? heeled.Heel : branch.Tree;
-            Console.WriteLine($"top=[{new RunTimeId(top.Element).ToHexString()}]");
+            var topRID = new RunTimeId(top.Element);
+
+            var exists = _cachedTree.GetNode(n => n.RunTimeId.Equals(topRID)) != null;
+
+            for (var j = 0; j < i && !exists; j++)
+            {
+                var previous = _collectedBranches[j];
+                exists = ContainsRuntimeId(previous.Tree, topRID);
+            }
+
+            Console.WriteLine($"top=[{topRID.ToHexString()}] exists={exists}");
         }
+    }
+
+    private static bool ContainsRuntimeId(UiNode node, RunTimeId runtimeId)
+    {
+        if (node == null)
+            return false;
+
+        if (node.RunTimeId != null && node.RunTimeId.Equals(runtimeId))
+            return true;
+
+        foreach (var child in node.Children ?? [])
+        {
+            if (ContainsRuntimeId(child, runtimeId))
+                return true;
+        }
+
+        return false;
     }
 }
