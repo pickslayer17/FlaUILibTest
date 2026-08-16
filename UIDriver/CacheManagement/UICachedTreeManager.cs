@@ -15,7 +15,7 @@ public class UICachedTreeManager : IStructureChangedListener
     private readonly IUIAutomation _automation;
     private UICachedTree _cachedTree;
     private IUIAutomationElement _cachedWindow;
-    private readonly List<UiNode> _collectedTrees = [];
+    private readonly List<Branch> _collectedBranches = [];
 
     public UICachedTreeManager(IUIAutomation automation)
     {
@@ -74,7 +74,7 @@ public class UICachedTreeManager : IStructureChangedListener
                     throw new NotImplementedException();
             }
 
-            Console.WriteLine($"iteration={_collectedTrees.Count} | source=[{ToHex(sourceRID)}] | target=[{ToHex(runtimeId)}]");
+            Console.WriteLine($"iteration={_collectedBranches.Count} | source=[{ToHex(sourceRID)}] | target=[{ToHex(runtimeId)}]");
         }
     }
 
@@ -96,8 +96,33 @@ public class UICachedTreeManager : IStructureChangedListener
         stopwatch.Stop();
         Console.WriteLine($"ADDED: BuildUINodeTree took {stopwatch.ElapsedMilliseconds} ms");
 
-        _collectedTrees.Add(addedChildTree);
-        PushTreeToVisualizer($"ADDED #{_collectedTrees.Count} [{new RunTimeId(parentElement).ToHexString()}]", addedChildTree);
+        var branch = new HeeledBranch(parentNode, addedChildTree);
+        _collectedBranches.Add(branch);
+        PushBranchToVisualizer($"ADDED #{_collectedBranches.Count} [{new RunTimeId(parentElement).ToHexString()}]", branch);
+    }
+
+    private void HandleChildAddedByRuntimeId(int[] runtimeId)
+    {
+        var element = _cachedWindow.FindFirst(TreeScope.TreeScope_Subtree, RuntimeIdCondition(runtimeId));
+        if(element == null)
+        {
+            Console.WriteLine($"ADDED by runtimeId [{ToHex(runtimeId)}]: not found in cachedWindow");
+            return;
+        }
+
+        var parentElement = _automation.RawViewWalker.GetParentElement(element);
+        var parentNode = new UiNode { Element = parentElement };
+
+        var addedChildTree = _cachedTree.BuildUINodeTree(element, parentNode);
+
+        var branch = new HeeledBranch(parentNode, addedChildTree);
+        _collectedBranches.Add(branch);
+        PushBranchToVisualizer($"ADDED(byRID) #{_collectedBranches.Count} [{new RunTimeId(parentElement).ToHexString()}]", branch);
+    }
+
+    private IUIAutomationCondition RuntimeIdCondition(int[] runtimeId)
+    {
+        return _automation.CreatePropertyCondition((int)UiaProperty.RuntimeId, runtimeId);
     }
 
     private void HandleChildrenInvalidated(UIAutomationElement invalidatedParent, int[]? sourceRID)
@@ -113,12 +138,22 @@ public class UICachedTreeManager : IStructureChangedListener
         stopwatch.Stop();
         Console.WriteLine($"INVALIDATED: BuildUINodeTree took {stopwatch.ElapsedMilliseconds} ms");
 
-        _collectedTrees.Add(invalidatedParentTree);
-        PushTreeToVisualizer($"INVALIDATED #{_collectedTrees.Count} [{invalidatedParentTree.RunTimeId.ToHexString()}]", invalidatedParentTree);
+        var branch = new Branch(invalidatedParentTree);
+        _collectedBranches.Add(branch);
+        PushBranchToVisualizer($"INVALIDATED #{_collectedBranches.Count} [{invalidatedParentTree.RunTimeId.ToHexString()}]", branch);
     }
 
-    private void PushTreeToVisualizer(string title, UiNode tree)
+    private void PushBranchToVisualizer(string title, Branch branch)
     {
-        Task.Run(() => UIDriver.Visualization.TreeVisualizer.AddTree(title, tree));
+        Task.Run(() => UIDriver.Visualization.TreeVisualizer.AddTree(title, branch.Tree));
+    }
+
+    public void PrintCollectedTreesParents()
+    {
+        foreach (var branch in _collectedBranches)
+        {
+            var top = branch is HeeledBranch heeled ? heeled.Heel : branch.Tree;
+            Console.WriteLine($"top=[{new RunTimeId(top.Element).ToHexString()}]");
+        }
     }
 }

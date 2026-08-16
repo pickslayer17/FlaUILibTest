@@ -17,6 +17,9 @@ class Program
         Console.WriteLine("\n=== press key ===");
         Console.ReadKey();
 
+        driver.PrintCollectedTreesParents();
+        Console.ReadKey();
+
         driver.Dispose();
     }
 }

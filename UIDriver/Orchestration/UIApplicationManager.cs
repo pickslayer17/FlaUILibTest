@@ -72,6 +72,12 @@ public sealed class UIApplicationManager
         }
     }
 
+    public void PrintCollectedTreesParents()
+    {
+        foreach (var container in _containers.Values)
+            container.CacheTreeManager.PrintCollectedTreesParents();
+    }
+
     private void LogContainers()
     {
         var snapshot = _containers.Values
