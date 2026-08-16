@@ -92,7 +92,7 @@ public class UICachedTreeManager : IStructureChangedListener
         var parentNode = new UiNode { Element = parentElement };
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var addedChildTree = _cachedTree.BuildUINodeTree(addedChild.Element, parentNode);
+        var addedChildTree = _cachedTree.BuildUINodeTree(addedChild.Element);
         stopwatch.Stop();
         Console.WriteLine($"ADDED: BuildUINodeTree took {stopwatch.ElapsedMilliseconds} ms");
 
@@ -113,7 +113,7 @@ public class UICachedTreeManager : IStructureChangedListener
         var parentElement = _automation.RawViewWalker.GetParentElement(element);
         var parentNode = new UiNode { Element = parentElement };
 
-        var addedChildTree = _cachedTree.BuildUINodeTree(element, parentNode);
+        var addedChildTree = _cachedTree.BuildUINodeTree(element);
 
         var branch = new HeeledBranch(parentNode, addedChildTree);
         _collectedBranches.Add(branch);
@@ -134,7 +134,7 @@ public class UICachedTreeManager : IStructureChangedListener
         invalidatedParent.Element.BuildUpdatedCache(cacheRequest);
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var invalidatedParentTree = _cachedTree.BuildUINodeTree(invalidatedParent.Element, null);
+        var invalidatedParentTree = _cachedTree.BuildUINodeTree(invalidatedParent.Element);
         stopwatch.Stop();
         Console.WriteLine($"INVALIDATED: BuildUINodeTree took {stopwatch.ElapsedMilliseconds} ms");
 

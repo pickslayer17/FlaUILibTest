@@ -8,7 +8,7 @@ public class UICachedTree
 
     public UICachedTree(IUIAutomationElement cachedWindow)
     {
-        Tree = BuildUINodeTree(cachedWindow, null);
+        Tree = BuildUINodeTree(cachedWindow);
     }
 
     private int _nodeCount;
@@ -18,7 +18,12 @@ public class UICachedTree
     private long _getChildrenTicks;
     private long _getElementTicks;
 
-    public UiNode BuildUINodeTree(IUIAutomationElement element, UiNode parent)
+    public UiNode BuildUINodeTree(IUIAutomationElement element)
+    {
+        return BuildUINodeTree(element, null);
+    }
+
+    private UiNode BuildUINodeTree(IUIAutomationElement element, UiNode parent)
     {
         _nodeCount = 0;
         _runtimeIdTicks = 0;
