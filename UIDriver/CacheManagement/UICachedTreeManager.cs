@@ -3,7 +3,7 @@ using UIDriver;
 using UIDriver.CustomModels;
 using UIDriver.Interfaces;
 
-public class UICachedTreeManager : IStructureChangedListener
+public class UICachedTreeManager : IStructureChangedListener, IPropertyChangedListener
 {
     private static readonly int[] CachedProperties =
     [
@@ -78,6 +78,22 @@ public class UICachedTreeManager : IStructureChangedListener
         }
     }
 
+    public void NotifyOnPropertyChanged(UIAutomationElement source, int propertyId, object newValue)
+    {
+        lock (notifyLock)
+        {
+            var runtimeId = new CachedRunTimeId(source.Element);
+            Console.WriteLine($"PROPERTY CHANGED | source=[{runtimeId.ToHexString()}] | property={PropertyName(propertyId)} | newValue={newValue}");
+        }
+    }
+
+    private static string PropertyName(int propertyId)
+    {
+        return Enum.IsDefined(typeof(UiaProperty), propertyId)
+            ? ((UiaProperty)propertyId).ToString()
+            : propertyId.ToString();
+    }
+
     private static string ToHex(int[]? runtimeId)
     {
         if (runtimeId == null)
@@ -117,7 +133,7 @@ public class UICachedTreeManager : IStructureChangedListener
 
         var branch = new HeeledBranch(parentNode, addedChildTree);
         _collectedBranches.Add(branch);
-        PushBranchToVisualizer($"ADDED(byRID) #{_collectedBranches.Count} [{new RunTimeId(parentElement).ToHexString()}]", branch);
+        PushBranchToVisualizer($"ADDED(byRID) #{_collectedBranches.Count} [{new CachedRunTimeId(parentElement).ToHexString()}]", branch);
     }
 
     private IUIAutomationCondition RuntimeIdCondition(int[] runtimeId)
@@ -154,7 +170,7 @@ public class UICachedTreeManager : IStructureChangedListener
         {
             var branch = _collectedBranches[i];
             var top = branch is HeeledBranch heeled ? heeled.Heel : branch.Tree;
-            var topRID = new RunTimeId(top.Element);
+            var topRID = branch is HeeledBranch ? new RunTimeId(top.Element) : new CachedRunTimeId(top.Element);
 
             var exists = _cachedTree.GetNode(n => n.RunTimeId.Equals(topRID)) != null;
 

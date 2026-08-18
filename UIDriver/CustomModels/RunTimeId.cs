@@ -3,7 +3,7 @@ using UIDriver.Constants;
 
 namespace UIDriver.CustomModels;
 
-public sealed class RunTimeId
+public class RunTimeId
 {
     public RunTimeIdStates State
     {
@@ -39,7 +39,7 @@ public sealed class RunTimeId
         _hashCode = ComputeHashCode(Id);
     }
 
-    private static int[] GetRunTimeId(IUIAutomationElement element)
+    protected virtual int[] GetRunTimeId(IUIAutomationElement element)
     {
         try
         {

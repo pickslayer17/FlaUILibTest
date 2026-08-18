@@ -6,7 +6,7 @@ public class UiNode
     public UiNode Parent;
     public UiNode[] Children;
 
-    public RunTimeId RunTimeId;
+    public CachedRunTimeId RunTimeId;
     public IUIAutomationElement Element;
 
     public int ControlType;

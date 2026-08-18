@@ -2,5 +2,5 @@
 
 public interface IPropertyChangedListener
 {
-    public void NotifyOnPropertyChanged(UIAutomationElement source);
+    public void NotifyOnPropertyChanged(UIAutomationElement source, int propertyId, object newValue);
 }

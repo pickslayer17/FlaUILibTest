@@ -23,6 +23,7 @@ public sealed class WindowContainer : IDisposable
         _cachedTreeManager.InitCachedTree(window.Element);
 
         _windowListener.RegisterStructureChangedListener(_cachedTreeManager);
+        _windowListener.RegisterPropertyChangedListener(_cachedTreeManager);
         _windowListener.StartListening();
     }
 

@@ -53,8 +53,13 @@ public sealed class WindowListener : IDisposable
         _structureChangedHandler = new NativeStructureChangedHandler(OnStructureChanged);
         _automation.AddStructureChangedEventHandler(_window, TreeScope.TreeScope_Subtree, structureCacheRequest, _structureChangedHandler);
 
+        var propertyCacheRequest = _automation.CreateCacheRequest();
+        propertyCacheRequest.TreeScope = TreeScope.TreeScope_Element;
+        propertyCacheRequest.AutomationElementMode = AutomationElementMode.AutomationElementMode_Full;
+        propertyCacheRequest.AddProperty((int)UiaProperty.RuntimeId);
+
         _propertyChangedHandler = new NativePropertyChangedHandler(OnPropertyChanged);
-        _automation.AddPropertyChangedEventHandler(_window, TreeScope.TreeScope_Subtree, null, _propertyChangedHandler, PropertiesToWatch());
+        _automation.AddPropertyChangedEventHandler(_window, TreeScope.TreeScope_Subtree, propertyCacheRequest, _propertyChangedHandler, PropertiesToWatch());
 
         _windowOpenedHandler = new NativeAutomationEventHandler(OnWindowOpened);
         _automation.AddAutomationEventHandler((int)UiaEvent.WindowOpened, _window, TreeScope.TreeScope_Subtree, null, _windowOpenedHandler);
@@ -81,7 +86,7 @@ public sealed class WindowListener : IDisposable
 
         foreach (var propertChangedListener in _propertChangedListeners)
         {
-            propertChangedListener.NotifyOnPropertyChanged(new UIAutomationElement(element));
+            propertChangedListener.NotifyOnPropertyChanged(new UIAutomationElement(element), propertyId, newValue);
         }
     }
 

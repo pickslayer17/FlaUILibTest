@@ -157,10 +157,10 @@ public class UICachedTree
         parent.Children = newChildren;
     }
 
-    private static RunTimeId SafeRunTimeId(IUIAutomationElement element)
+    private static CachedRunTimeId SafeRunTimeId(IUIAutomationElement element)
     {
-        try { return new RunTimeId(element.GetCachedPropertyValue((int)UiaProperty.RuntimeId) as int[] ?? []); }
-        catch { return new RunTimeId([]); }
+        try { return new CachedRunTimeId(element.GetCachedPropertyValue((int)UiaProperty.RuntimeId) as int[] ?? []); }
+        catch { return new CachedRunTimeId([]); }
     }
 
     private static string SafeString(IUIAutomationElement element, int propertyId)
