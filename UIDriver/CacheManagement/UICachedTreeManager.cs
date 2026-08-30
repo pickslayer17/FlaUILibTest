@@ -48,11 +48,14 @@ public class UICachedTreeManager : IStructureChangedListener, IPropertyChangedLi
         return cacheRequest;
     }
     public Lock notifyLock = new Lock();
+    private DateTime _previousTimestamp;
     public void NotifyOnStructureChanged(UIAutomationElement source, StructureChangeType changeType, int[] runtimeId)
     {
         lock (notifyLock)
         {
             var sourceRID = source.Element.GetCachedPropertyValue((int)UiaProperty.RuntimeId) as int[];
+            var controlType = source.Element.GetCachedPropertyValue((int)UiaProperty.ControlType) as int?;
+            var name = source.Element.GetCachedPropertyValue((int)UiaProperty.Name) as string;
 
             switch (changeType)
             {
@@ -60,21 +63,29 @@ public class UICachedTreeManager : IStructureChangedListener, IPropertyChangedLi
                     HandleChildAdded(source);
                     break;
                 case StructureChangeType.StructureChangeType_ChildRemoved:
+                    Console.WriteLine("REMOVED");
                     break;
                 case StructureChangeType.StructureChangeType_ChildrenInvalidated:
                     HandleChildrenInvalidated(source, sourceRID);
                     break;
                 case StructureChangeType.StructureChangeType_ChildrenReordered:
+                    Console.WriteLine("REORDERED");
                     break;
                 case StructureChangeType.StructureChangeType_ChildrenBulkRemoved:
+                    Console.WriteLine("BULK_REMOVED");
                     break;
                 case StructureChangeType.StructureChangeType_ChildrenBulkAdded:
+                    Console.WriteLine("BULK_ADDED");
                     break;
                 default:
                     throw new NotImplementedException();
             }
 
-            Console.WriteLine($"iteration={_collectedBranches.Count} | source=[{ToHex(sourceRID)}] | target=[{ToHex(runtimeId)}]");
+            var now = DateTime.Now;
+            var delta = _previousTimestamp == default ? TimeSpan.Zero : now - _previousTimestamp;
+            _previousTimestamp = now;
+
+            Console.WriteLine($"[{now:HH:mm:ss.fff}] (+{delta.TotalMilliseconds:F0} ms) iteration={_collectedBranches.Count} | source=[{ToHex(sourceRID)}] | target=[{ToHex(runtimeId)}] | controlType=[{ControlType(controlType)}] | name=[{name}]");
         }
     }
 
@@ -83,11 +94,21 @@ public class UICachedTreeManager : IStructureChangedListener, IPropertyChangedLi
         lock (notifyLock)
         {
             var runtimeId = new CachedRunTimeId(source.Element);
-            Console.WriteLine($"PROPERTY CHANGED | source=[{runtimeId.ToHexString()}] | property={PropertyName(propertyId)} | newValue={newValue}");
+            //Console.WriteLine($"PROPERTY CHANGED | source=[{runtimeId.ToHexString()}] | property={PropertyName(propertyId)} | newValue={newValue}");
         }
     }
 
-    private static string PropertyName(int propertyId)
+    private string ControlType(int? controlTypeId)
+    {
+        if (controlTypeId == null)
+            return "";
+
+        return Enum.IsDefined(typeof(UiaControlType), controlTypeId)
+            ? ((UiaControlType)controlTypeId).ToString()
+            : controlTypeId.ToString();
+    }
+
+    private string PropertyName(int propertyId)
     {
         return Enum.IsDefined(typeof(UiaProperty), propertyId)
             ? ((UiaProperty)propertyId).ToString()
