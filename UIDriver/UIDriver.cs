@@ -25,7 +25,7 @@ public sealed class UIDriver : IDisposable
         var processIdCondition = _automation.CreatePropertyCondition((int)UiaProperty.ProcessId, _process.Id);
         var mainWindow = desktop.FindFirst(TreeScope.TreeScope_Children, processIdCondition);
 
-        _applicationManager.RegisterDefault(new UIAutomationElement(mainWindow));
+        _applicationManager.RegisterDefault(mainWindow);
     }
 
     public UILocator Locator(UIBy by)

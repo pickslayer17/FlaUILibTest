@@ -1,6 +1,8 @@
-﻿namespace UIDriver.Interfaces;
+using Interop.UIAutomationClient;
+
+namespace UIDriver.Interfaces;
 
 public interface IPropertyChangedListener
 {
-    public void NotifyOnPropertyChanged(UIAutomationElement source, int propertyId, object newValue);
+    public void NotifyOnPropertyChanged(IUIAutomationElement source, int propertyId, object newValue);
 }

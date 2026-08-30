@@ -1,3 +1,4 @@
+using Interop.UIAutomationClient;
 using UIDriver.CustomModels;
 
 namespace UIDriver;
@@ -8,12 +9,12 @@ public sealed class ToggleWindowListener
 
     public ToggleWindowListener(UIApplicationManager applicationManager) => _applicationManager = applicationManager;
 
-    public void NotifyOnOpened(UIAutomationElement window)
+    public void NotifyOnOpened(IUIAutomationElement window)
     {
         _applicationManager.NotifyWindowOpened(window);
     }
 
-    public void NotifyOnClosed(UIAutomationElement window, RunTimeId windowRunTimeId)
+    public void NotifyOnClosed(IUIAutomationElement window, RunTimeId windowRunTimeId)
     {
         _applicationManager.NotifyWindowClosed(windowRunTimeId);
     }

@@ -28,10 +28,10 @@ public sealed class WindowListener : IDisposable
     private NativeAutomationEventHandler? _windowOpenedHandler;
     private NativeAutomationEventHandler? _windowClosedHandler;
 
-    public WindowListener(UIAutomationElement window, IUIAutomation automation)
+    public WindowListener(IUIAutomationElement window, IUIAutomation automation)
     {
-        _window = window.Element;
-        _windowRunTimeId = window.RunTimeId;
+        _window = window;
+        _windowRunTimeId = window.LiveRuntimeId();
         _automation = automation;
     }
 
@@ -75,7 +75,7 @@ public sealed class WindowListener : IDisposable
 
         foreach (var structureChangedListener in _structureChangedListeners)
         {
-            structureChangedListener.NotifyOnStructureChanged(new UIAutomationElement(element), changeType, runtimeId);
+            structureChangedListener.NotifyOnStructureChanged(element, changeType, runtimeId);
         }
     }
 
@@ -86,18 +86,18 @@ public sealed class WindowListener : IDisposable
 
         foreach (var propertChangedListener in _propertChangedListeners)
         {
-            propertChangedListener.NotifyOnPropertyChanged(new UIAutomationElement(element), propertyId, newValue);
+            propertChangedListener.NotifyOnPropertyChanged(element, propertyId, newValue);
         }
     }
 
     private void OnWindowOpened(IUIAutomationElement element, int eventId)
     {
-        _toggleWindowSubscriber?.NotifyOnOpened(new UIAutomationElement(element));
+        _toggleWindowSubscriber?.NotifyOnOpened(element);
     }
 
     private void OnWindowClosed(IUIAutomationElement element, int eventId)
     {
-        _toggleWindowSubscriber?.NotifyOnClosed(new UIAutomationElement(element), _windowRunTimeId);
+        _toggleWindowSubscriber?.NotifyOnClosed(element, _windowRunTimeId);
     }
 
     private static int[] PropertiesToWatch()

@@ -1,29 +1,10 @@
-using Interop.UIAutomationClient;
+using UIDriver.Constants;
 
 namespace UIDriver.CustomModels;
 
-public class CachedRunTimeId : RunTimeId
+public sealed class CachedRunTimeId : RunTimeId
 {
-    public CachedRunTimeId(int[] id) : base(id)
+    public CachedRunTimeId(int[] id, RunTimeIdStates state) : base(id, state)
     {
-    }
-
-    public CachedRunTimeId(IUIAutomationElement element) : base(element)
-    {
-    }
-
-    protected override int[] GetRunTimeId(IUIAutomationElement element)
-    {
-        try
-        {
-            if (element.GetCachedPropertyValue((int)UiaProperty.RuntimeId) is int[] cached)
-                return cached;
-
-            return [];
-        }
-        catch (ArgumentException)
-        {
-            return [0xA, 0xA, 0xA, 0xA, 0xA, 0xA];
-        }
     }
 }

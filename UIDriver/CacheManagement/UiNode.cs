@@ -1,4 +1,5 @@
 using Interop.UIAutomationClient;
+using UIDriver.CacheManagement;
 using UIDriver.CustomModels;
 
 public class UiNode
@@ -11,4 +12,7 @@ public class UiNode
 
     public int ControlType;
     public string Name;
+
+    public NodeChangeState ChangeState = NodeChangeState.Original;
+    public int? ChangedAtIteration;
 }

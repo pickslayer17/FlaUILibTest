@@ -1,8 +1,8 @@
-﻿using Interop.UIAutomationClient;
+using Interop.UIAutomationClient;
 
 namespace UIDriver.Interfaces;
 
 public interface IStructureChangedListener
 {
-    public void NotifyOnStructureChanged(UIAutomationElement source, StructureChangeType changeType, int[] runtimeId);
+    public void NotifyOnStructureChanged(IUIAutomationElement source, StructureChangeType changeType, int[] runtimeId);
 }

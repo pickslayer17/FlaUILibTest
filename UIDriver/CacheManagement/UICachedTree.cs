@@ -1,10 +1,14 @@
 using Interop.UIAutomationClient;
 using UIDriver;
+using UIDriver.CacheManagement;
 using UIDriver.CustomModels;
 
 public class UICachedTree
 {
     public UiNode Tree { get; }
+
+    private readonly List<TreeSnapshot> _history = [];
+    public IReadOnlyList<TreeSnapshot> History => _history;
 
     public UICachedTree(IUIAutomationElement cachedWindow)
     {
@@ -42,7 +46,7 @@ public class UICachedTree
         _nodeCount++;
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        var runtimeId = SafeRunTimeId(element);
+        var runtimeId = element.CachedRuntimeId();
         _runtimeIdTicks += sw.ElapsedTicks;
 
         sw.Restart();
@@ -85,15 +89,30 @@ public class UICachedTree
     private static double TicksToMs(long ticks) =>
         Math.Round(ticks * 1000.0 / System.Diagnostics.Stopwatch.Frequency, 1);
 
-    public void Remove(UiNode node)
+    public void Add(UiNode parent, UiNode branch, int iteration)
     {
-        RemoveSubtree(node);
+        branch.Parent = parent;
+        branch.ChangeState = NodeChangeState.Added;
+        branch.ChangedAtIteration = iteration;
+        LinkChildToParent(branch, parent);
     }
 
-    public void AddNode(UiNode parent, UiNode node)
+    public void Replace(UiNode target, UiNode branch, int iteration)
     {
-        node.Parent = parent;
-        LinkChildToParent(node, parent);
+        var parent = target.Parent;
+        branch.Parent = parent;
+        branch.ChangeState = NodeChangeState.Replaced;
+        branch.ChangedAtIteration = iteration;
+
+        RemoveSubtree(target);
+        LinkChildToParent(branch, parent);
+    }
+
+    public TreeSnapshot Commit(int iteration)
+    {
+        var snapshot = NodeSnapshotFactory.ToTreeSnapshot(Tree, iteration);
+        _history.Add(snapshot);
+        return snapshot;
     }
 
     public UiNode? GetNode(Func<UiNode, bool> condition)
@@ -155,12 +174,6 @@ public class UICachedTree
         }
 
         parent.Children = newChildren;
-    }
-
-    private static CachedRunTimeId SafeRunTimeId(IUIAutomationElement element)
-    {
-        try { return new CachedRunTimeId(element.GetCachedPropertyValue((int)UiaProperty.RuntimeId) as int[] ?? []); }
-        catch { return new CachedRunTimeId([]); }
     }
 
     private static string SafeString(IUIAutomationElement element, int propertyId)

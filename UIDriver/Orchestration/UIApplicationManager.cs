@@ -2,6 +2,7 @@ using Interop.UIAutomationClient;
 using System.Collections.Concurrent;
 using UIDriver.Constants;
 using UIDriver.CustomModels;
+using UIDriver.Visualization;
 
 namespace UIDriver;
 
@@ -10,6 +11,7 @@ public sealed class UIApplicationManager
     public int ProcessId { get; set; }
 
     private readonly IUIAutomation _automation;
+    private readonly ITreeSnapshotSink _snapshotSink;
     private readonly ConcurrentDictionary<RunTimeId, WindowContainer> _containers = new();
     private readonly ToggleWindowListener _toggleWindowListener;
 
@@ -19,16 +21,22 @@ public sealed class UIApplicationManager
     private WindowContainer? _desktopContainer;
 
     public UIApplicationManager(IUIAutomation automation)
+        : this(automation, Visualization.TreeVisualizer.Instance)
+    {
+    }
+
+    public UIApplicationManager(IUIAutomation automation, ITreeSnapshotSink snapshotSink)
     {
         _automation = automation;
+        _snapshotSink = snapshotSink;
         _toggleWindowListener = new ToggleWindowListener(this);
     }
 
-    public void RegisterDefault(UIAutomationElement window) => _defaultContainer = CreateWindowContainer(window);
+    public void RegisterDefault(IUIAutomationElement window) => _defaultContainer = CreateWindowContainer(window);
 
-    public void RegisterDesktop(UIAutomationElement window) => _desktopContainer = CreateWindowContainer(window);
+    public void RegisterDesktop(IUIAutomationElement window) => _desktopContainer = CreateWindowContainer(window);
 
-    public Task<UIAutomationElement> RequestElementAsync(UIBy by)
+    public Task<IUIAutomationElement> RequestElementAsync(UIBy by)
     {
         lock (_windowEventLock)
         {
@@ -36,14 +44,16 @@ public sealed class UIApplicationManager
         }
     }
 
-    public void NotifyWindowOpened(UIAutomationElement window)
+    public void NotifyWindowOpened(IUIAutomationElement window)
     {
         lock (_windowEventLock)
         {
-            if (window.RunTimeId.State != RunTimeIdStates.Valid)
+            var windowRunTimeId = window.LiveRuntimeId();
+
+            if (windowRunTimeId.State != RunTimeIdStates.Valid)
                 throw new InvalidOperationException($"Invalid window RuntimeId");
 
-            if(_containers.TryGetValue(window.RunTimeId, out _))
+            if(_containers.TryGetValue(windowRunTimeId, out _))
             {
                 return;
             }
@@ -78,15 +88,6 @@ public sealed class UIApplicationManager
             container.CacheTreeManager.PrintCollectedTreesParents();
     }
 
-    private void LogContainers()
-    {
-        var snapshot = _containers.Values
-            .Select(container => (container.WindowTitle, container.CacheTreeManager.Tree))
-            .ToList();
-
-        Visualization.TreeVisualizer.Render(snapshot);
-    }
-
     private void ReassignDefaultContainer()
     {
         var allApplicationContainers = _containers.Where(kv => kv.Value != _desktopContainer).Where(kv => kv.Value.ProcessId == ProcessId);
@@ -100,17 +101,19 @@ public sealed class UIApplicationManager
 
     private bool IsDefaultContainerExists() => _containers.Any(kvp => ReferenceEquals(kvp.Value, _defaultContainer));
 
-    private WindowContainer CreateWindowContainer(UIAutomationElement window)
+    private WindowContainer CreateWindowContainer(IUIAutomationElement window)
     {
-        if(window.RunTimeId.State != RunTimeIdStates.Valid)
-            throw new Exception($"Invalid window RuntimeId: {string.Join(",", window.ToString())}");
+        var windowRunTimeId = window.LiveRuntimeId();
 
-        var container = new WindowContainer(window, _automation);
+        if(windowRunTimeId.State != RunTimeIdStates.Valid)
+            throw new Exception($"Invalid window RuntimeId: {windowRunTimeId}");
+
+        var container = new WindowContainer(window, _automation, _snapshotSink);
         container.RegisterToggleWindowEvent(_toggleWindowListener);
-        if(!_containers.TryAdd(window.RunTimeId, container))
-            throw new Exception($"Failed to add window container for window [{string.Join(",", window.RunTimeId)}].");
+        if(!_containers.TryAdd(windowRunTimeId, container))
+            throw new Exception($"Failed to add window container for window [{windowRunTimeId}].");
 
-        LogContainers();
+        container.PublishInitialSnapshot();
         return container;
     }
 
@@ -124,8 +127,6 @@ public sealed class UIApplicationManager
             {
                 ReassignDefaultContainer();
             }
-          
-            LogContainers();
         }
         else
         {

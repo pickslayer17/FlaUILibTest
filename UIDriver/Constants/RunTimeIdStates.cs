@@ -2,8 +2,7 @@
 
 public enum RunTimeIdStates
 {
-    Valid = 0,
-    ErrorTryingGet = -1,
-    Null = -2,
-    Empty = -3
+    Valid,
+    Empty,
+    ErrorTryingGet
 }

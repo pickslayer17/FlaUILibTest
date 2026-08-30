@@ -1,68 +1,24 @@
-using Interop.UIAutomationClient;
 using UIDriver.Constants;
 
 namespace UIDriver.CustomModels;
 
 public class RunTimeId
 {
-    public RunTimeIdStates State
-    {
-        get
-        {
-            if (Id.Length == 0)
-            {
-                return RunTimeIdStates.Empty;
-            }
-
-            if (Id.Length == 1)
-            {
-                if (Id[0] == (int)RunTimeIdStates.ErrorTryingGet) return RunTimeIdStates.ErrorTryingGet;
-                if (Id[0] == (int)RunTimeIdStates.Null) return RunTimeIdStates.Null;
-            }
-
-            return RunTimeIdStates.Valid;
-        }
-    }
     public int[] Id { get; init; }
+    public RunTimeIdStates State { get; init; }
 
     private readonly int _hashCode;
 
-    public RunTimeId(int[] id)
+    public RunTimeId(int[] id, RunTimeIdStates state)
     {
-        Id = id ?? [(int)RunTimeIdStates.Null];
+        Id = id;
+        State = state;
         _hashCode = ComputeHashCode(Id);
-    }
-
-    public RunTimeId(IUIAutomationElement element)
-    {
-        Id = GetRunTimeId(element);
-        _hashCode = ComputeHashCode(Id);
-    }
-
-    protected virtual int[] GetRunTimeId(IUIAutomationElement element)
-    {
-        try
-        {
-            if (element.GetCachedPropertyValue((int)UiaProperty.RuntimeId) is int[] cached)
-                return cached;
-        }
-        catch
-        {
-        }
-
-        try
-        {
-            return (int[]?)element.GetRuntimeId() ?? [(int)RunTimeIdStates.Null];
-        }
-        catch
-        {
-            return [(int)RunTimeIdStates.ErrorTryingGet];
-        }
     }
 
     public override string ToString() => string.Join(",", Id);
 
-    public string ToHexString() => string.Join(",", Id.Select(part => part.ToString("X")));
+    public string ToHexString() => Id.ToHexString();
 
     public override bool Equals(object? obj) => obj is RunTimeId other && Id.SequenceEqual(other.Id);
 

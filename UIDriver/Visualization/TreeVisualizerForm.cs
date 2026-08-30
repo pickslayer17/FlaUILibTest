@@ -1,10 +1,13 @@
 using System.Windows.Forms;
+using UIDriver.CacheManagement;
+using UIDriver.CustomModels;
 
 namespace UIDriver.Visualization;
 
 public sealed class TreeVisualizerForm : Form
 {
     private readonly TabControl _tabControl;
+    private readonly Dictionary<int, TabPage> _pagesByContainer = new();
 
     public TreeVisualizerForm()
     {
@@ -16,60 +19,51 @@ public sealed class TreeVisualizerForm : Form
         Controls.Add(_tabControl);
     }
 
-    public void Render(IReadOnlyList<(string Title, UiNode Tree)> containers)
+    public void RenderSnapshot(ContainerId container, string title, TreeSnapshot snapshot)
     {
         if (InvokeRequired)
         {
-            BeginInvoke(() => Render(containers));
+            BeginInvoke(() => RenderSnapshot(container, title, snapshot));
             return;
         }
 
-        _tabControl.TabPages.Clear();
+        var page = GetOrCreatePage(container);
+        page.Text = string.IsNullOrEmpty(title) ? "(no title)" : title;
 
-        foreach (var (title, tree) in containers)
-        {
-            var page = new TabPage(string.IsNullOrEmpty(title) ? "(no title)" : title);
-            var treeView = new TreeView { Dock = DockStyle.Fill };
+        page.Controls.Clear();
 
-            var root = BuildTreeNode(tree);
-            if (root != null)
-                treeView.Nodes.Add(root);
-            treeView.ExpandAll();
-
-            page.Controls.Add(treeView);
-            _tabControl.TabPages.Add(page);
-        }
-    }
-
-    public void AddTree(string title, UiNode tree)
-    {
-        if (InvokeRequired)
-        {
-            BeginInvoke(() => AddTree(title, tree));
-            return;
-        }
-
-        var page = new TabPage(string.IsNullOrEmpty(title) ? "(no title)" : title);
         var treeView = new TreeView { Dock = DockStyle.Fill };
-
-        var root = BuildTreeNode(tree);
+        var root = BuildTreeNode(snapshot.Root);
         if (root != null)
             treeView.Nodes.Add(root);
         treeView.ExpandAll();
 
         page.Controls.Add(treeView);
-        _tabControl.TabPages.Add(page);
         _tabControl.SelectedTab = page;
     }
 
-    private static TreeNode? BuildTreeNode(UiNode node)
+    private TabPage GetOrCreatePage(ContainerId container)
+    {
+        if (_pagesByContainer.TryGetValue(container.Value, out var existing))
+            return existing;
+
+        var page = new TabPage();
+        _tabControl.TabPages.Add(page);
+        _pagesByContainer[container.Value] = page;
+        return page;
+    }
+
+    private static TreeNode? BuildTreeNode(NodeSnapshot node)
     {
         if (node == null) return null;
 
-        var label = $"[{ControlTypeName(node.ControlType)}] name='{node.Name}' [{node.RunTimeId?.ToHexString()}]";
+        var label = $"[{ControlTypeName(node.ControlType)}] name='{node.Name}' [{node.RunTimeId.ToHexString()}]";
+        if (node.ChangeState != NodeChangeState.Original)
+            label += $" <{node.ChangeState}@{node.ChangedAtIteration}>";
+
         var treeNode = new TreeNode(label);
 
-        foreach (var child in node.Children ?? [])
+        foreach (var child in node.Children)
         {
             var childNode = BuildTreeNode(child);
             if (childNode != null)

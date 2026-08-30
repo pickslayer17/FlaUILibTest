@@ -1,13 +1,24 @@
 using System.Windows.Forms;
+using UIDriver.CacheManagement;
 
 namespace UIDriver.Visualization;
 
-public static class TreeVisualizer
+public sealed class TreeVisualizer : ITreeSnapshotSink
 {
-    private static TreeVisualizerForm? _form;
-    private static readonly object _lock = new();
+    public static TreeVisualizer Instance { get; } = new();
 
-    public static void EnsureStarted()
+    private TreeVisualizerForm? _form;
+    private readonly object _lock = new();
+
+    private TreeVisualizer() { }
+
+    public void OnSnapshot(ContainerId container, string title, TreeSnapshot snapshot)
+    {
+        EnsureStarted();
+        _form!.RenderSnapshot(container, title, snapshot);
+    }
+
+    private void EnsureStarted()
     {
         lock (_lock)
         {
@@ -25,17 +36,5 @@ public static class TreeVisualizer
             thread.Start();
             ready.Wait();
         }
-    }
-
-    public static void Render(IReadOnlyList<(string Title, UiNode Tree)> containers)
-    {
-        EnsureStarted();
-        _form!.Render(containers);
-    }
-
-    public static void AddTree(string title, UiNode tree)
-    {
-        EnsureStarted();
-        _form!.AddTree(title, tree);
     }
 }
