@@ -2,16 +2,17 @@ using Interop.UIAutomationClient;
 using UIDriver;
 using UIDriver.CacheManagement;
 using UIDriver.CustomModels;
+using UIDriver.Visualization;
 
 public class UICachedTree
 {
     public UiNode Tree { get; }
 
-    private readonly List<TreeSnapshot> _history = [];
-    public IReadOnlyList<TreeSnapshot> History => _history;
+    private readonly object _owner;
 
-    public UICachedTree(IUIAutomationElement cachedWindow)
+    public UICachedTree(IUIAutomationElement cachedWindow, object owner)
     {
+        _owner = owner;
         Tree = BuildUINodeTree(cachedWindow);
     }
 
@@ -89,15 +90,17 @@ public class UICachedTree
     private static double TicksToMs(long ticks) =>
         Math.Round(ticks * 1000.0 / System.Diagnostics.Stopwatch.Frequency, 1);
 
-    public void Add(UiNode parent, UiNode branch, int iteration)
+    public void Add(UiNode parent, UiNode branch, int iteration, string title)
     {
         branch.Parent = parent;
         branch.ChangeState = NodeChangeState.Added;
         branch.ChangedAtIteration = iteration;
         LinkChildToParent(branch, parent);
+
+        PublishSnapshot(iteration, title);
     }
 
-    public void Replace(UiNode target, UiNode branch, int iteration)
+    public void Replace(UiNode target, UiNode branch, int iteration, string title)
     {
         var parent = target.Parent;
         branch.Parent = parent;
@@ -106,13 +109,31 @@ public class UICachedTree
 
         RemoveSubtree(target);
         LinkChildToParent(branch, parent);
+
+        PublishSnapshot(iteration, title);
     }
 
-    public TreeSnapshot Commit(int iteration)
+    public void Mark(int[] rid, NodeChangeState state, int iteration, string title)
+    {
+        var node = GetNode(n => n.RunTimeId.Id.RuntimeIdEquals(rid));
+        if (node == null)
+            throw new InvalidOperationException($"MARK: node [{rid.ToHexString()}] not found in cached tree");
+
+        node.ChangeState = state;
+        node.ChangedAtIteration = iteration;
+
+        PublishSnapshot(iteration, title);
+    }
+
+    public void PublishInitial(string title)
+    {
+        PublishSnapshot(0, title);
+    }
+
+    private void PublishSnapshot(int iteration, string title)
     {
         var snapshot = NodeSnapshotFactory.ToTreeSnapshot(Tree, iteration);
-        _history.Add(snapshot);
-        return snapshot;
+        Task.Run(() => TreeVisualizer.Instance.OnSnapshot(_owner, title, snapshot));
     }
 
     public UiNode? GetNode(Func<UiNode, bool> condition)

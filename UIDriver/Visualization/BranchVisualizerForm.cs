@@ -4,14 +4,13 @@ using UIDriver.CustomModels;
 
 namespace UIDriver.Visualization;
 
-public sealed class TreeVisualizerForm : Form
+public sealed class BranchVisualizerForm : Form
 {
     private readonly TabControl _tabControl;
-    private readonly Dictionary<object, TabPage> _pagesByOwner = new(ReferenceEqualityComparer.Instance);
 
-    public TreeVisualizerForm()
+    public BranchVisualizerForm()
     {
-        Text = "UIDriver Tree Visualizer";
+        Text = "UIDriver Branch Visualizer";
         Width = 900;
         Height = 1000;
 
@@ -19,38 +18,25 @@ public sealed class TreeVisualizerForm : Form
         Controls.Add(_tabControl);
     }
 
-    public void RenderSnapshot(object owner, string title, TreeSnapshot snapshot)
+    public void AddBranch(string title, NodeSnapshot branch)
     {
         if (InvokeRequired)
         {
-            BeginInvoke(() => RenderSnapshot(owner, title, snapshot));
+            BeginInvoke(() => AddBranch(title, branch));
             return;
         }
 
-        var page = GetOrCreatePage(owner);
-        page.Text = string.IsNullOrEmpty(title) ? "(no title)" : title;
-
-        page.Controls.Clear();
-
+        var page = new TabPage(string.IsNullOrEmpty(title) ? "(no title)" : title);
         var treeView = new TreeView { Dock = DockStyle.Fill };
-        var root = BuildTreeNode(snapshot.Root);
+
+        var root = BuildTreeNode(branch);
         if (root != null)
             treeView.Nodes.Add(root);
         treeView.ExpandAll();
 
         page.Controls.Add(treeView);
-        _tabControl.SelectedTab = page;
-    }
-
-    private TabPage GetOrCreatePage(object owner)
-    {
-        if (_pagesByOwner.TryGetValue(owner, out var existing))
-            return existing;
-
-        var page = new TabPage();
         _tabControl.TabPages.Add(page);
-        _pagesByOwner[owner] = page;
-        return page;
+        _tabControl.SelectedTab = page;
     }
 
     private static TreeNode? BuildTreeNode(NodeSnapshot node)
@@ -58,9 +44,6 @@ public sealed class TreeVisualizerForm : Form
         if (node == null) return null;
 
         var label = $"[{ControlTypeName(node.ControlType)}] name='{node.Name}' [{node.RunTimeId.ToHexString()}]";
-        if (node.ChangeState != NodeChangeState.Original)
-            label += $" <{node.ChangeState}@{node.ChangedAtIteration}>";
-
         var treeNode = new TreeNode(label);
 
         foreach (var child in node.Children)

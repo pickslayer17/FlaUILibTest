@@ -2,7 +2,6 @@ using Interop.UIAutomationClient;
 using System.Collections.Concurrent;
 using UIDriver.Constants;
 using UIDriver.CustomModels;
-using UIDriver.Visualization;
 
 namespace UIDriver;
 
@@ -11,7 +10,6 @@ public sealed class UIApplicationManager
     public int ProcessId { get; set; }
 
     private readonly IUIAutomation _automation;
-    private readonly ITreeSnapshotSink _snapshotSink;
     private readonly ConcurrentDictionary<RunTimeId, WindowContainer> _containers = new();
     private readonly ToggleWindowListener _toggleWindowListener;
 
@@ -21,14 +19,8 @@ public sealed class UIApplicationManager
     private WindowContainer? _desktopContainer;
 
     public UIApplicationManager(IUIAutomation automation)
-        : this(automation, Visualization.TreeVisualizer.Instance)
-    {
-    }
-
-    public UIApplicationManager(IUIAutomation automation, ITreeSnapshotSink snapshotSink)
     {
         _automation = automation;
-        _snapshotSink = snapshotSink;
         _toggleWindowListener = new ToggleWindowListener(this);
     }
 
@@ -108,12 +100,11 @@ public sealed class UIApplicationManager
         if(windowRunTimeId.State != RunTimeIdStates.Valid)
             throw new Exception($"Invalid window RuntimeId: {windowRunTimeId}");
 
-        var container = new WindowContainer(window, _automation, _snapshotSink);
+        var container = new WindowContainer(window, _automation);
         container.RegisterToggleWindowEvent(_toggleWindowListener);
         if(!_containers.TryAdd(windowRunTimeId, container))
             throw new Exception($"Failed to add window container for window [{windowRunTimeId}].");
 
-        container.PublishInitialSnapshot();
         return container;
     }
 

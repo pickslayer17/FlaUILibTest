@@ -1,9 +1,9 @@
 using Interop.UIAutomationClient;
 using UIDriver;
 using UIDriver.CacheManagement;
+using UIDriver.Constants;
 using UIDriver.CustomModels;
 using UIDriver.Interfaces;
-using UIDriver.Visualization;
 
 public class UICachedTreeManager : IStructureChangedListener, IPropertyChangedListener
 {
@@ -15,35 +15,28 @@ public class UICachedTreeManager : IStructureChangedListener, IPropertyChangedLi
     ];
 
     private readonly IUIAutomation _automation;
-    private readonly ContainerId _containerId;
-    private readonly ITreeSnapshotSink _snapshotSink;
+    private readonly object _owner;
     private UICachedTree _cachedTree;
     private IUIAutomationElement _cachedWindow;
     private readonly List<Branch> _collectedBranches = [];
     private int _iteration;
 
-    public UICachedTreeManager(IUIAutomation automation, ContainerId containerId, ITreeSnapshotSink snapshotSink)
+    public UICachedTreeManager(IUIAutomation automation, object owner)
     {
         _automation = automation;
-        _containerId = containerId;
-        _snapshotSink = snapshotSink;
+        _owner = owner;
     }
 
-    public void InitCachedTree(IUIAutomationElement window)
+    public void InitCachedTree(IUIAutomationElement window, string title)
     {
         var cacheRequest = GetCacheRequest(CachedProperties);
         _cachedWindow = window.BuildUpdatedCache(cacheRequest);
 
-        _cachedTree = new UICachedTree(_cachedWindow);
+        _cachedTree = new UICachedTree(_cachedWindow, _owner);
+        _cachedTree.PublishInitial(title);
     }
 
     public UiNode Tree => _cachedTree.Tree;
-
-    public void PublishInitialSnapshot(string title)
-    {
-        var snapshot = _cachedTree.Commit(++_iteration);
-        Task.Run(() => _snapshotSink.OnSnapshot(_containerId, title, snapshot));
-    }
 
     public Task<IUIAutomationElement> FindFirst(UIBy by)
     {
@@ -138,41 +131,90 @@ public class UICachedTreeManager : IStructureChangedListener, IPropertyChangedLi
 
     private void HandleChildAdded(IUIAutomationElement addedChild)
     {
+        var sourceRid = addedChild.CachedRuntimeId();
+        if (sourceRid.State != RunTimeIdStates.Valid)
+        {
+            Console.WriteLine($"ADDED: source RuntimeId is [{sourceRid.State}], skip");
+            return;
+        }
+
         var parentElement = _automation.RawViewWalker.GetParentElement(addedChild);
-        var parentNode = new UiNode { Element = parentElement };
-
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var parentRid = parentElement.LiveRuntimeId();
         var addedChildTree = _cachedTree.BuildUINodeTree(addedChild);
-        stopwatch.Stop();
-        Console.WriteLine($"ADDED: BuildUINodeTree took {stopwatch.ElapsedMilliseconds} ms");
+        _collectedBranches.Add(new HeeledBranch(new UiNode { Element = parentElement }, addedChildTree));
+        PublishBranch($"ADDED #{_collectedBranches.Count} [{parentRid.ToHexString()}]", addedChildTree);
 
-        var branch = new HeeledBranch(parentNode, addedChildTree);
-        _collectedBranches.Add(branch);
-        PublishSnapshot($"ADDED #{_collectedBranches.Count} [{parentElement.LiveRuntimeId().ToHexString()}]", branch);
+        var heel = _cachedTree.GetNode(n => n.RunTimeId.Id.RuntimeIdEquals(parentRid.Id));
+        if (heel == null)
+            throw new InvalidOperationException($"ADDED: heel [{parentRid.ToHexString()}] not found in cached tree");
+
+        _cachedTree.Add(heel, addedChildTree, ++_iteration, $"ADDED #{_collectedBranches.Count} [{parentRid.ToHexString()}]");
     }
 
     private void HandleChildrenInvalidated(IUIAutomationElement invalidatedParent, int[]? sourceRID)
     {
-        if(sourceRID == null || sourceRID.Length == 0)
+        if (sourceRID == null || sourceRID.Length == 0)
+        {
+            Console.WriteLine("INVALIDATED: source RuntimeId is empty, skip");
             return;
+        }
 
         var cacheRequest = GetCacheRequest(CachedProperties);
         invalidatedParent.BuildUpdatedCache(cacheRequest);
 
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var invalidatedParentTree = _cachedTree.BuildUINodeTree(invalidatedParent);
-        stopwatch.Stop();
-        Console.WriteLine($"INVALIDATED: BuildUINodeTree took {stopwatch.ElapsedMilliseconds} ms");
+        _collectedBranches.Add(new Branch(invalidatedParentTree));
 
-        var branch = new Branch(invalidatedParentTree);
-        _collectedBranches.Add(branch);
-        PublishSnapshot($"INVALIDATED #{_collectedBranches.Count} [{invalidatedParentTree.RunTimeId.ToHexString()}]", branch);
+        var rootRid = invalidatedParentTree.RunTimeId.Id;
+        var title = $"INVALIDATED #{_collectedBranches.Count} [{invalidatedParentTree.RunTimeId.ToHexString()}]";
+        PublishBranch(title, invalidatedParentTree);
+
+        if (AllDescendantsRidEmpty(invalidatedParentTree))
+        {
+            _cachedTree.Mark(rootRid, NodeChangeState.Dirty, ++_iteration, title);
+            return;
+        }
+
+        var target = _cachedTree.GetNode(n => n.RunTimeId.Id.RuntimeIdEquals(rootRid))
+            ?? throw new InvalidOperationException($"INVALIDATED: target [{invalidatedParentTree.RunTimeId.ToHexString()}] not found in cached tree");
+
+        _cachedTree.Replace(target, invalidatedParentTree, ++_iteration, title);
+        return;
+
+        throw new InvalidOperationException($"INVALIDATED: mixed RuntimeId presence in branch [{invalidatedParentTree.RunTimeId.ToHexString()}]");
     }
 
-    private void PublishSnapshot(string title, Branch branch)
+    private static void PublishBranch(string title, UiNode branch)
     {
-        var snapshot = NodeSnapshotFactory.ToTreeSnapshot(branch.Tree, ++_iteration);
-        Task.Run(() => _snapshotSink.OnSnapshot(_containerId, title, snapshot));
+        var snapshot = NodeSnapshotFactory.ToNodeSnapshot(branch);
+        Task.Run(() => UIDriver.Visualization.BranchVisualizer.Instance.AddBranch(title, snapshot));
+    }
+
+    private static bool AllDescendantsRidEmpty(UiNode root)
+    {
+        foreach (var child in root.Children ?? [])
+        {
+            if (child.RunTimeId.Id.Length != 0)
+                return false;
+            if (!AllDescendantsRidEmpty(child))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool AllNodesRidValid(UiNode node)
+    {
+        if (node.RunTimeId.Id.Length == 0)
+            return false;
+
+        foreach (var child in node.Children ?? [])
+        {
+            if (!AllNodesRidValid(child))
+                return false;
+        }
+
+        return true;
     }
 
     public void PrintCollectedTreesParents()

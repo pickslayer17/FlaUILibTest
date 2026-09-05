@@ -3,19 +3,19 @@ using UIDriver.CacheManagement;
 
 namespace UIDriver.Visualization;
 
-public sealed class TreeVisualizer : ITreeSnapshotSink
+public sealed class BranchVisualizer
 {
-    public static TreeVisualizer Instance { get; } = new();
+    public static BranchVisualizer Instance { get; } = new();
 
-    private TreeVisualizerForm? _form;
+    private BranchVisualizerForm? _form;
     private readonly object _lock = new();
 
-    private TreeVisualizer() { }
+    private BranchVisualizer() { }
 
-    public void OnSnapshot(object owner, string title, TreeSnapshot snapshot)
+    public void AddBranch(string title, NodeSnapshot branch)
     {
         EnsureStarted();
-        _form!.RenderSnapshot(owner, title, snapshot);
+        _form!.AddBranch(title, branch);
     }
 
     private void EnsureStarted()
@@ -27,7 +27,7 @@ public sealed class TreeVisualizer : ITreeSnapshotSink
             var ready = new ManualResetEventSlim();
             var thread = new Thread(() =>
             {
-                _form = new TreeVisualizerForm();
+                _form = new BranchVisualizerForm();
                 _form.Load += (_, _) => ready.Set();
                 Application.Run(_form);
             });
