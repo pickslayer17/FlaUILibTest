@@ -6,7 +6,7 @@ using UIDriver.Visualization;
 
 public class UICachedTree
 {
-    public UiNode Tree { get; }
+    public UiNode Tree { get; private set; }
 
     private readonly object _owner;
 
@@ -107,8 +107,15 @@ public class UICachedTree
         branch.ChangeState = NodeChangeState.Replaced;
         branch.ChangedAtIteration = iteration;
 
-        RemoveSubtree(target);
-        LinkChildToParent(branch, parent);
+        if (parent == null)
+        {
+            Tree = branch;
+        }
+        else
+        {
+            RemoveSubtree(target);
+            LinkChildToParent(branch, parent);
+        }
 
         PublishSnapshot(iteration, title);
     }
