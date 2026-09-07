@@ -23,9 +23,7 @@ public class UICachedTreeManager : IStructureChangedListener, IPropertyChangedLi
         _cachedTree = new UICachedTree(_cachedWindow);
     }
 
-
     public Lock notifyLock = new Lock();
-    private DateTime _previousTimestamp;
     public void NotifyOnStructureChanged(IUIAutomationElement source, StructureChangeType changeType, int[] runtimeId)
     {
         lock (notifyLock)

@@ -1,5 +1,4 @@
 using Interop.UIAutomationClient;
-using UIDriver;
 using UIDriver.CacheManagement;
 using UIDriver.CustomModels;
 namespace CacheManagement;
@@ -16,13 +15,6 @@ public class UICachedTree
         Tree = BuildUINodeTree(cachedWindow);
     }
 
-    private int _nodeCount;
-    private long _runtimeIdTicks;
-    private long _controlTypeTicks;
-    private long _nameTicks;
-    private long _getChildrenTicks;
-    private long _getElementTicks;
-
     public UiNode BuildUINodeTree(IUIAutomationElement element)
     {
         return BuildUINodeTree(element, null);
@@ -30,13 +22,6 @@ public class UICachedTree
 
     private UiNode BuildUINodeTree(IUIAutomationElement element, UiNode parent)
     {
-        _nodeCount = 0;
-        _runtimeIdTicks = 0;
-        _controlTypeTicks = 0;
-        _nameTicks = 0;
-        _getChildrenTicks = 0;
-        _getElementTicks = 0;
-
         var node = BuildUINodeTreeCore(element, parent);
 
         return node;
@@ -44,42 +29,21 @@ public class UICachedTree
 
     private UiNode BuildUINodeTreeCore(IUIAutomationElement element, UiNode parent)
     {
-        _nodeCount++;
-
-        var sw = System.Diagnostics.Stopwatch.StartNew();
         var runtimeId = element.CachedRuntimeId();
-        _runtimeIdTicks += sw.ElapsedTicks;
-
-        sw.Restart();
-        var controlType = SafeInt(element, (int)UiaProperty.ControlType);
-        _controlTypeTicks += sw.ElapsedTicks;
-
-        sw.Restart();
-        var name = SafeString(element, (int)UiaProperty.Name);
-        _nameTicks += sw.ElapsedTicks;
-
-        var node = new UiNode
+        var node = new UiNode(element)
         {
             Parent = parent,
             Element = element,
             RunTimeId = runtimeId,
-            ControlType = controlType,
-            Name = name
         };
 
         var children = new List<UiNode>();
-
-        sw.Restart();
         var cachedChildren = element.GetCachedChildren();
         var childCount = cachedChildren?.Length ?? 0;
-        _getChildrenTicks += sw.ElapsedTicks;
 
         for (var i = 0; i < childCount && cachedChildren != null; i++)
         {
-            sw.Restart();
             var childElement = cachedChildren.GetElement(i);
-            _getElementTicks += sw.ElapsedTicks;
-
             children.Add(BuildUINodeTreeCore(childElement, node));
         }
 
@@ -87,38 +51,13 @@ public class UICachedTree
         return node;
     }
 
-    private static double TicksToMs(long ticks) =>
-        Math.Round(ticks * 1000.0 / System.Diagnostics.Stopwatch.Frequency, 1);
-
-    public void Add(UiNode parent, UiNode branch, int iteration)
+    public void Add()
     {
-        branch.Parent = parent;
-        branch.ChangeState = NodeChangeState.Added;
-        branch.ChangedAtIteration = iteration;
-        LinkChildToParent(branch, parent);
+
     }
 
     public void Replace(UiNode target, UiNode branch, int iteration)
     {
-        var parent = target.Parent;
-        branch.Parent = parent;
-        branch.ChangeState = NodeChangeState.Replaced;
-        branch.ChangedAtIteration = iteration;
-
-        RemoveSubtree(target);
-        LinkChildToParent(branch, parent);
-    }
-
-    public TreeSnapshot Commit(int iteration)
-    {
-        var snapshot = NodeSnapshotFactory.ToTreeSnapshot(Tree, iteration);
-        _history.Add(snapshot);
-        return snapshot;
-    }
-
-    public UiNode? GetNode(Func<UiNode, bool> condition)
-    {
-        return FindNode(Tree, condition);
     }
 
     private static UiNode? FindNode(UiNode node, Func<UiNode, bool> condition)
@@ -133,15 +72,6 @@ public class UICachedTree
         }
 
         return null;
-    }
-
-    private void RemoveSubtree(UiNode node)
-    {
-        UnlinkChildFromParent(node, node.Parent);
-        node.Parent = null;
-
-        foreach (var child in node.Children ?? [])
-            RemoveSubtree(child);
     }
 
     private static void LinkChildToParent(UiNode child, UiNode parent)

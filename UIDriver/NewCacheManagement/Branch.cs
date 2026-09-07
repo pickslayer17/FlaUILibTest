@@ -2,7 +2,7 @@ namespace CacheManagement;
 
 public class Branch
 {
-    public UiNode Tree { get; }
+    public readonly UiNode Tree;
 
     public Branch(UiNode tree)
     {

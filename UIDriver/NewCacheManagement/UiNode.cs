@@ -5,12 +5,13 @@ namespace CacheManagement;
 
 public class UiNode
 {
-    public UiNode Parent;
-    public UiNode[] Children;
+    public UiNode Parent { get; set; }
+    public UiNode[] Children { get; set; }
+    public IUIAutomationElement Element { get; init; }
+    public CachedRunTimeId RunTimeId { get; set; }
 
-    public CachedRunTimeId RunTimeId;
-    public IUIAutomationElement Element;
-
-    public int ControlType;
-    public string Name;
+    public UiNode(IUIAutomationElement element)
+    {
+        Element = element;
+    }
 }
