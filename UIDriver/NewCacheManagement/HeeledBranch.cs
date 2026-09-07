@@ -4,7 +4,7 @@ public sealed class HeeledBranch : Branch
 {
     public UiNode Heel { get; }
 
-    public HeeledBranch(UiNode heel, UiNode tree) : base(tree)
+    public HeeledBranch(UiNode tree, UiNode heel) : base(tree)
     {
         Heel = heel;
     }

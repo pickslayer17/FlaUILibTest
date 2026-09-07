@@ -1,62 +1,27 @@
 using Interop.UIAutomationClient;
-using UIDriver.CacheManagement;
-using UIDriver.CustomModels;
+using UIDriver.NewCacheManagement;
 namespace CacheManagement;
 
 public class UICachedTree
 {
     public UiNode Tree { get; }
 
-    private readonly List<TreeSnapshot> _history = [];
-    public IReadOnlyList<TreeSnapshot> History => _history;
-
     public UICachedTree(IUIAutomationElement cachedWindow)
     {
-        Tree = BuildUINodeTree(cachedWindow);
+        Tree = BranchFactory.BuildUINodeTree(cachedWindow);
     }
 
-    public UiNode BuildUINodeTree(IUIAutomationElement element)
-    {
-        return BuildUINodeTree(element, null);
-    }
-
-    private UiNode BuildUINodeTree(IUIAutomationElement element, UiNode parent)
-    {
-        var node = BuildUINodeTreeCore(element, parent);
-
-        return node;
-    }
-
-    private UiNode BuildUINodeTreeCore(IUIAutomationElement element, UiNode parent)
-    {
-        var runtimeId = element.CachedRuntimeId();
-        var node = new UiNode(element)
-        {
-            Parent = parent,
-            Element = element,
-            RunTimeId = runtimeId,
-        };
-
-        var children = new List<UiNode>();
-        var cachedChildren = element.GetCachedChildren();
-        var childCount = cachedChildren?.Length ?? 0;
-
-        for (var i = 0; i < childCount && cachedChildren != null; i++)
-        {
-            var childElement = cachedChildren.GetElement(i);
-            children.Add(BuildUINodeTreeCore(childElement, node));
-        }
-
-        node.Children = children.ToArray();
-        return node;
-    }
-
-    public void Add()
+    public void Add(UiNode nodeToAdd)
     {
 
     }
 
-    public void Replace(UiNode target, UiNode branch, int iteration)
+    public void Remove(UiNode nodeToRemove)
+    {
+
+    }
+
+    public void Replace(UiNode target, UiNode branch)
     {
     }
 
@@ -105,17 +70,5 @@ public class UICachedTree
         }
 
         parent.Children = newChildren;
-    }
-
-    private static string SafeString(IUIAutomationElement element, int propertyId)
-    {
-        try { return element.GetCachedPropertyValue(propertyId) as string; }
-        catch { return null; }
-    }
-
-    private static int SafeInt(IUIAutomationElement element, int propertyId)
-    {
-        try { return Convert.ToInt32(element.GetCachedPropertyValue(propertyId)); }
-        catch { return 0; }
     }
 }

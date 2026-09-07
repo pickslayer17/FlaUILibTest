@@ -1,7 +1,7 @@
 using Interop.UIAutomationClient;
-using UIDriver.Constants;
 using UIDriver.CustomModels;
 using UIDriver.Interfaces;
+using UIDriver.NewCacheManagement;
 
 namespace UIDriver;
 
@@ -43,20 +43,12 @@ public sealed class WindowListener : IDisposable
 
     public void StartListening()
     {
-        var structureCacheRequest = _automation.CreateCacheRequest();
-        structureCacheRequest.TreeScope = TreeScope.TreeScope_Subtree;
-        structureCacheRequest.AutomationElementMode = AutomationElementMode.AutomationElementMode_Full;
-        structureCacheRequest.AddProperty((int)UiaProperty.RuntimeId);
-        structureCacheRequest.AddProperty((int)UiaProperty.ControlType);
-        structureCacheRequest.AddProperty((int)UiaProperty.Name);
-
+        var structureCacheRequest = _automation.BuildCacheRequest();
         _structureChangedHandler = new NativeStructureChangedHandler(OnStructureChanged);
         _automation.AddStructureChangedEventHandler(_window, TreeScope.TreeScope_Subtree, structureCacheRequest, _structureChangedHandler);
 
-        var propertyCacheRequest = _automation.CreateCacheRequest();
+        var propertyCacheRequest = _automation.BuildCacheRequest();
         propertyCacheRequest.TreeScope = TreeScope.TreeScope_Element;
-        propertyCacheRequest.AutomationElementMode = AutomationElementMode.AutomationElementMode_Full;
-        propertyCacheRequest.AddProperty((int)UiaProperty.RuntimeId);
 
         _propertyChangedHandler = new NativePropertyChangedHandler(OnPropertyChanged);
         _automation.AddPropertyChangedEventHandler(_window, TreeScope.TreeScope_Subtree, propertyCacheRequest, _propertyChangedHandler, PropertiesToWatch());

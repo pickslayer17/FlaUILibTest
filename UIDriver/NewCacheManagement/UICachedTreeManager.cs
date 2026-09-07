@@ -1,5 +1,7 @@
 using Interop.UIAutomationClient;
 using UIDriver;
+using UIDriver.Constants;
+using UIDriver.CustomModels;
 using UIDriver.Interfaces;
 using UIDriver.NewCacheManagement;
 
@@ -61,7 +63,27 @@ public class UICachedTreeManager : IStructureChangedListener, IPropertyChangedLi
 
     private void HandleChildAdded(IUIAutomationElement addedChild)
     {
+        var sourceRid = addedChild.CachedRuntimeId();
+        if (sourceRid.State != RunTimeIdStates.Valid)
+        {
+            return;
+        }
 
+
+        // Get real parent to understand where element was added
+        var liveParentElement = _automation.RawViewWalker.GetParentElement(addedChild);
+        if (liveParentElement == null)
+            throw new NullReferenceException();
+
+        
+
+        
+
+        //var heel = _cachedTree.GetNode(n => n.RunTimeId.Id.RuntimeIdEquals(parentRid.Id));
+        //if (heel == null)
+        //    throw new InvalidOperationException($"ADDED: heel [{parentRid.ToHexString()}] not found in cached tree");
+
+        //_cachedTree.Add(heel, addedChildTree, ++_iteration, $"ADDED #{_collectedBranches.Count} [{parentRid.ToHexString()}]");
     }
 
     private void HandleChildrenInvalidated(IUIAutomationElement invalidatedParent)

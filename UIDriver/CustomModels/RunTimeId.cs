@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using UIDriver.Constants;
 
 namespace UIDriver.CustomModels;
@@ -23,6 +24,11 @@ public class RunTimeId
     public override bool Equals(object? obj) => obj is RunTimeId other && Id.SequenceEqual(other.Id);
 
     public override int GetHashCode() => _hashCode;
+
+    public CachedRunTimeId ToCacheRunTimeId()
+    {
+        return this as CachedRunTimeId;
+    }
 
     private static int ComputeHashCode(int[] id)
     {

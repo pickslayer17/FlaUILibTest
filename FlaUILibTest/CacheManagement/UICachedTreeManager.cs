@@ -187,7 +187,7 @@ public class UICachedTreeManager : IStructureChangedListener, IPropertyChangedLi
     private static void PublishBranch(string title, UiNode branch)
     {
         var snapshot = NodeSnapshotFactory.ToNodeSnapshot(branch);
-        Task.Run(() => UIDriver.Visualization.BranchVisualizer.Instance.AddBranch(title, snapshot));
+        //Task.Run(() => UIDriver.Visualization.BranchVisualizer.Instance.AddBranch(title, snapshot));
     }
 
     private static bool AllDescendantsRidEmpty(UiNode root)
