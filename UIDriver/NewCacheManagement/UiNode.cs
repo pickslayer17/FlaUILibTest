@@ -17,4 +17,13 @@ public class UiNode
     {
         Element = element;
     }
+
+    public IEnumerable<UiNode> Traverse()
+    {
+        yield return this;
+
+        foreach (var child in Children ?? [])
+            foreach (var descendant in child.Traverse())
+                yield return descendant;
+    }
 }

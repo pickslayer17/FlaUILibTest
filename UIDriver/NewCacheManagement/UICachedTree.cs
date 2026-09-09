@@ -26,18 +26,7 @@ public class UICachedTree
     }
 
     private static UiNode? FindNode(UiNode node, Func<UiNode, bool> condition)
-    {
-        if (node == null) return null;
-        if (condition(node)) return node;
-
-        foreach (var child in node.Children ?? [])
-        {
-            var match = FindNode(child, condition);
-            if (match != null) return match;
-        }
-
-        return null;
-    }
+        => node?.Traverse().FirstOrDefault(condition);
 
     private static void LinkChildToParent(UiNode child, UiNode parent)
     {
