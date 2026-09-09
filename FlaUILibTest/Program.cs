@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using UIDriver;
 
 class Program
 {
@@ -15,9 +14,6 @@ class Program
         driver.Launch(processStartInfo);
 
         Console.WriteLine("\n=== press key ===");
-        Console.ReadKey();
-
-        driver.PrintCollectedTreesParents();
         Console.ReadKey();
 
         driver.Dispose();

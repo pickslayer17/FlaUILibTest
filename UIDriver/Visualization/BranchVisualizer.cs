@@ -1,4 +1,5 @@
 using System.Windows.Forms;
+using UIDriver.NewCacheManagement;
 
 namespace UIDriver.Visualization;
 

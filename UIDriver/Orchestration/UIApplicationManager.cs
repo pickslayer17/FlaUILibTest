@@ -74,12 +74,6 @@ public sealed class UIApplicationManager
         }
     }
 
-    public void PrintCollectedTreesParents()
-    {
-        foreach (var container in _containers.Values)
-            container.CacheTreeManager.PrintCollectedTreesParents();
-    }
-
     private void ReassignDefaultContainer()
     {
         var allApplicationContainers = _containers.Where(kv => kv.Value != _desktopContainer).Where(kv => kv.Value.ProcessId == ProcessId);

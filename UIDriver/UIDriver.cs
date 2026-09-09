@@ -35,11 +35,6 @@ public sealed class UIDriver : IDisposable
         return locator;
     }
 
-    public void PrintCollectedTreesParents()
-    {
-        _applicationManager.PrintCollectedTreesParents();
-    }
-
     public void Dispose()
     {
     }
