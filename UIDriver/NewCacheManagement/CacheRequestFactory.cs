@@ -14,7 +14,7 @@ public static class CacheRequestFactory
     public static TreeScope TreeScope = TreeScope.TreeScope_Subtree;
     public static AutomationElementMode AutomationElementMode = AutomationElementMode.AutomationElementMode_Full;
 
-    public static IUIAutomationCacheRequest BuildCacheRequest(this IUIAutomation automation)
+    public static IUIAutomationCacheRequest BuildCacheRequest(IUIAutomation automation)
     {
         var cacheRequest = automation.CreateCacheRequest();
         cacheRequest.TreeScope = TreeScope;

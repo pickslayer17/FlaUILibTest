@@ -19,7 +19,7 @@ public class UICachedTreeManager : IStructureChangedListener, IPropertyChangedLi
 
     public void InitCachedTree(IUIAutomationElement window)
     {
-        var cacheRequest = _automation.BuildCacheRequest();
+        var cacheRequest = CacheRequestFactory.BuildCacheRequest(_automation);
         var _cachedWindow = window.BuildUpdatedCache(cacheRequest);
 
         _cachedTree = new UICachedTree(_cachedWindow);

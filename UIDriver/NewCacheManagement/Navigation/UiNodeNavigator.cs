@@ -1,6 +1,7 @@
 using System.Xml;
 using System.Xml.XPath;
 
+namespace CacheManagement.Navigation;
 class UiNodeNavigator : XPathNavigator
 {
     private const int NoAttributeValue = -1;

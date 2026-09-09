@@ -1,6 +1,6 @@
 using UIDriver;
 using Interop.UIAutomationClient;
-using UIDriver.CacheManagement;
+namespace CacheManagement.Navigation;
 
 class UISuperFinder
 {

@@ -1,6 +1,6 @@
 using Interop.UIAutomationClient;
 
-namespace UIDriver.CacheManagement;
+namespace CacheManagement.Navigation;
 
 public sealed class UiNodePropMatcher
 {

@@ -1,3 +1,4 @@
+namespace CacheManagement.Navigation;
 class UiNodeWalker
 {
     public UiNode MoveParent(UiNode uiNode)

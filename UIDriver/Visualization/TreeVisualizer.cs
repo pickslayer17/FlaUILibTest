@@ -1,9 +1,7 @@
 using System.Windows.Forms;
-using UIDriver.CacheManagement;
-
 namespace UIDriver.Visualization;
 
-public sealed class TreeVisualizer : ITreeSnapshotSink
+public sealed class TreeVisualizer 
 {
     public static TreeVisualizer Instance { get; } = new();
 
@@ -15,7 +13,7 @@ public sealed class TreeVisualizer : ITreeSnapshotSink
     public void OnSnapshot(object owner, string title, TreeSnapshot snapshot)
     {
         EnsureStarted();
-        _form!.RenderSnapshot(owner, title, snapshot);
+        //_form!.RenderSnapshot(owner, title, snapshot);
     }
 
     private void EnsureStarted()

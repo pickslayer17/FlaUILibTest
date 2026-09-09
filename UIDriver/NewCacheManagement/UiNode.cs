@@ -10,6 +10,9 @@ public class UiNode
     public IUIAutomationElement Element { get; init; }
     public CachedRunTimeId RunTimeId { get; set; }
 
+    public int ControlType;
+    public string Name;
+
     public UiNode(IUIAutomationElement element)
     {
         Element = element;

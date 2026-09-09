@@ -1,5 +1,5 @@
+using CacheManagement;
 using Interop.UIAutomationClient;
-using UIDriver.Constants;
 using UIDriver.CustomModels;
 
 namespace UIDriver;
@@ -20,15 +20,15 @@ public sealed class WindowContainer : IDisposable
         try { ProcessId = (int)window.GetCurrentPropertyValue((int)UiaProperty.ProcessId); } catch { }
 
         _windowListener = new WindowListener(window, automation);
-        _cachedTreeManager = new UICachedTreeManager(automation, this);
-        _cachedTreeManager.InitCachedTree(window, WindowTitle);
+        _cachedTreeManager = new UICachedTreeManager(automation);
+        _cachedTreeManager.InitCachedTree(window);
 
         _windowListener.RegisterStructureChangedListener(_cachedTreeManager);
         _windowListener.RegisterPropertyChangedListener(_cachedTreeManager);
         _windowListener.StartListening();
     }
 
-    public Task<IUIAutomationElement> SubmitOrderAsync(UIBy by) => _cachedTreeManager.FindFirst(by);
+    public Task<IUIAutomationElement> SubmitOrderAsync(UIBy by) => throw new NotImplementedException();
 
     public UICachedTreeManager CacheTreeManager => _cachedTreeManager;
 

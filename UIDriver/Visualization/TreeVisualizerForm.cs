@@ -1,5 +1,4 @@
 using System.Windows.Forms;
-using UIDriver.CacheManagement;
 using UIDriver.CustomModels;
 
 namespace UIDriver.Visualization;
@@ -19,64 +18,4 @@ public sealed class TreeVisualizerForm : Form
         Controls.Add(_tabControl);
     }
 
-    public void RenderSnapshot(object owner, string title, TreeSnapshot snapshot)
-    {
-        if (InvokeRequired)
-        {
-            BeginInvoke(() => RenderSnapshot(owner, title, snapshot));
-            return;
-        }
-
-        var page = GetOrCreatePage(owner);
-        page.Text = string.IsNullOrEmpty(title) ? "(no title)" : title;
-
-        page.Controls.Clear();
-
-        var treeView = new TreeView { Dock = DockStyle.Fill };
-        var root = BuildTreeNode(snapshot.Root);
-        if (root != null)
-            treeView.Nodes.Add(root);
-        treeView.ExpandAll();
-
-        page.Controls.Add(treeView);
-        _tabControl.SelectedTab = page;
-    }
-
-    private TabPage GetOrCreatePage(object owner)
-    {
-        if (_pagesByOwner.TryGetValue(owner, out var existing))
-            return existing;
-
-        var page = new TabPage();
-        _tabControl.TabPages.Add(page);
-        _pagesByOwner[owner] = page;
-        return page;
-    }
-
-    private static TreeNode? BuildTreeNode(NodeSnapshot node)
-    {
-        if (node == null) return null;
-
-        var label = $"[{ControlTypeName(node.ControlType)}] name='{node.Name}' [{node.RunTimeId.ToHexString()}]";
-        if (node.ChangeState != NodeChangeState.Original)
-            label += $" <{node.ChangeState}@{node.ChangedAtIteration}>";
-
-        var treeNode = new TreeNode(label);
-
-        foreach (var child in node.Children)
-        {
-            var childNode = BuildTreeNode(child);
-            if (childNode != null)
-                treeNode.Nodes.Add(childNode);
-        }
-
-        return treeNode;
-    }
-
-    private static string ControlTypeName(int controlType)
-    {
-        return Enum.IsDefined(typeof(UiaControlType), controlType)
-            ? ((UiaControlType)controlType).ToString()
-            : controlType.ToString();
-    }
 }
