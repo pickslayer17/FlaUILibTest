@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using UIDriver.Api;
-using UIDriver.Visualization;
+using UIDriver.Diagnostics.Remote;
 
 class Program
 {
@@ -14,10 +14,11 @@ class Program
         };
 
         using var loggerFactory = LoggerFactory.Create(builder => builder.AddSimpleConsole().SetMinimumLevel(LogLevel.Debug));
+        using var visualizer = new RemoteSnapshotObserver(Path.Combine(AppContext.BaseDirectory, "UIDriver.Visualization.exe"));
         var driver = new Driver(new DriverOptions
         {
-            TreeObservers = [TreeVisualizer.Instance],
-            BranchObservers = [BranchVisualizer.Instance],
+            TreeObservers = [visualizer],
+            BranchObservers = [visualizer],
             LoggerFactory = loggerFactory
         });
         driver.Launch(processStartInfo);

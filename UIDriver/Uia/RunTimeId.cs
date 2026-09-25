@@ -13,6 +13,8 @@ public sealed class RunTimeId : IEquatable<RunTimeId>
 
     public static RunTimeId? FromArray(int[]? id) => id is { Length: > 0 } ? new RunTimeId(id) : null;
 
+    internal int[] ToArray() => (int[])_id.Clone();
+
     public string ToHexString() => _id.ToHexString();
 
     public string ToDisplayString() => _id.ToDisplayString();

@@ -16,8 +16,25 @@ public sealed class BranchVisualizerForm : Form
         Controls.Add(_tabControl);
     }
 
+    public void ClearAll()
+    {
+        if (IsDisposed)
+            return;
+
+        if (InvokeRequired)
+        {
+            BeginInvoke(() => ClearAll());
+            return;
+        }
+
+        _tabControl.TabPages.Clear();
+    }
+
     public void AddBranch(BranchSnapshot branch)
     {
+        if (IsDisposed)
+            return;
+
         if (InvokeRequired)
         {
             BeginInvoke(() => AddBranch(branch));

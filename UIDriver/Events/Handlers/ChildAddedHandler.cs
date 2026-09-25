@@ -31,8 +31,8 @@ public sealed class ChildAddedHandler
 
         var branch = BranchFactory.BuildHeeledBranch(addedChild, liveParent);
         _snapshotPublisher.PublishBranch(branch, structureChanged.ChangeType);
-
-        _logger.LogDebug("ADDED: [{Child}] to heel [{Heel}]", addedChildRunTimeId, branch.Heel.RunTimeId);
+        
         structureChanged.CachedTree.Add(branch);
+        _logger.LogDebug("ADDED: [{Child}] to heel [{Heel}]", addedChildRunTimeId, branch.Heel.RunTimeId);
     }
 }

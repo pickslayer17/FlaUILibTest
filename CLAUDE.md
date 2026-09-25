@@ -5,8 +5,10 @@
 
 ## Проекты
 - `UIDriver/` — библиотека, живой код, без WinForms.
-- `UIDriver.Visualization/` — WinForms-визуализаторы: `TreeVisualizer` (дерево окна, изменения подсвечены цветом) и `BranchVisualizer` (прилетевшие ветки).
-- `FlaUILibTest/` — консоль-песочница: `Program.cs` запускает Excel через `Driver` и подключает визуализаторы и логгер. `DcPushBenchMark/` — старый бенчмарк, без запроса не читать и не трогать.
+- `UIDriver.Visualization/` — **отдельный процесс** (WinExe): формы Tree (дерево окна, изменения подсвечены цветом) и Branch (прилетевшие ветки). Отдельный процесс нужен, чтобы окна жили, когда драйвер стоит на брейкпоинте или упал.
+  - Снимки приходят по named pipe `UIDriver.Visualization`: JSON, одно сообщение на строку. Протокол и клиент лежат в `UIDriver/Diagnostics/Remote/` (`RemoteSnapshotObserver`).
+  - Клиент сам запускает exe, если он ещё не запущен. Каждое новое подключение очищает вкладки.
+- `FlaUILibTest/` — консоль-песочница: `Program.cs` запускает Excel через `Driver` и подключает `RemoteSnapshotObserver` и логгер. `DcPushBenchMark/` — старый бенчмарк, без запроса не читать и не трогать.
 - `docs/` — архитектурный docx.
 
 ## Слои UIDriver (namespace = папка)
@@ -19,7 +21,7 @@
 - `Events/` — события UIA идут в одну очередь (`EventQueue`, один поток-потребитель), `EventDispatcher` раздаёт их обработчикам в `Handlers/`. Исключение в потребителе роняет процесс — это задумано.
 - `Windows/` — `UIApplicationManager` (связывает всё вместе), `WindowRegistry`, `WindowContainer`.
 - `Tree/` — `UICachedTree` (Add / Replace / MarkDirty + версия), `UiNode`, ветки, фабрики. `Snapshots/` — неизменяемые версионные снимки дерева и веток.
-- `Diagnostics/` — `ITreeObserver`, `IBranchObserver`, `SnapshotPublisher`.
+- `Diagnostics/` — `ITreeObserver`, `IBranchObserver`, `SnapshotPublisher`. В `Remote/` — pipe-клиент и протокол для визуализатора.
 - `Search/` — заморожено: `UISuperFinder`, `UiNodeNavigator` и прочее.
 - `Exceptions/`, `Processes/` (`ProcessKillJob`).
 

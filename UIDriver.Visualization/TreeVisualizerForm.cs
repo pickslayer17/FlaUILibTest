@@ -18,8 +18,26 @@ public sealed class TreeVisualizerForm : Form
         Controls.Add(_tabControl);
     }
 
+    public void ClearAll()
+    {
+        if (IsDisposed)
+            return;
+
+        if (InvokeRequired)
+        {
+            BeginInvoke(() => ClearAll());
+            return;
+        }
+
+        _tabControl.TabPages.Clear();
+        _treeViewsByWindow.Clear();
+    }
+
     public void RenderSnapshot(TreeSnapshot snapshot)
     {
+        if (IsDisposed)
+            return;
+
         if (InvokeRequired)
         {
             BeginInvoke(() => RenderSnapshot(snapshot));
