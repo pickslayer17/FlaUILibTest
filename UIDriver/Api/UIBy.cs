@@ -1,13 +1,6 @@
 using Interop.UIAutomationClient;
 
-namespace UIDriver;
-
-public enum WindowScope
-{
-    Desktop,
-    Default,
-    Custom
-}
+namespace UIDriver.Api;
 
 public sealed class UIBy
 {

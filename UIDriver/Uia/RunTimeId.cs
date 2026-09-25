@@ -1,34 +1,29 @@
-using System.Runtime.CompilerServices;
-using UIDriver.Constants;
+namespace UIDriver.Uia;
 
-namespace UIDriver.CustomModels;
-
-public class RunTimeId
+public sealed class RunTimeId : IEquatable<RunTimeId>
 {
-    public int[] Id { get; init; }
-    public RunTimeIdStates State { get; init; }
-
+    private readonly int[] _id;
     private readonly int _hashCode;
 
-    public RunTimeId(int[] id, RunTimeIdStates state)
+    private RunTimeId(int[] id)
     {
-        Id = id;
-        State = state;
-        _hashCode = ComputeHashCode(Id);
+        _id = (int[])id.Clone();
+        _hashCode = ComputeHashCode(_id);
     }
 
-    public override string ToString() => string.Join(",", Id);
+    public static RunTimeId? FromArray(int[]? id) => id is { Length: > 0 } ? new RunTimeId(id) : null;
 
-    public string ToHexString() => Id.ToHexString();
+    public string ToHexString() => _id.ToHexString();
 
-    public override bool Equals(object? obj) => obj is RunTimeId other && Id.SequenceEqual(other.Id);
+    public string ToDisplayString() => _id.ToDisplayString();
+
+    public override string ToString() => ToHexString();
+
+    public bool Equals(RunTimeId? other) => other is not null && _id.RuntimeIdEquals(other._id);
+
+    public override bool Equals(object? obj) => Equals(obj as RunTimeId);
 
     public override int GetHashCode() => _hashCode;
-
-    public CachedRunTimeId ToCacheRunTimeId()
-    {
-        return this as CachedRunTimeId;
-    }
 
     private static int ComputeHashCode(int[] id)
     {

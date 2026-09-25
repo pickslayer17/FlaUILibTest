@@ -1,6 +1,7 @@
-using Interop.UIAutomationClient;
+using UIDriver.Uia;
+using UIDriver.Windows;
 
-namespace UIDriver;
+namespace UIDriver.Api;
 
 public sealed class UILocator
 {
@@ -15,7 +16,7 @@ public sealed class UILocator
 
     public Task ClickAsync() => WithElement(el => { });
 
-    private async Task<T> WithElement<T>(Func<IUIAutomationElement, T> action) => action(await GetElementAsync());
-    private async Task WithElement(Action<IUIAutomationElement> action) => action(await GetElementAsync());
-    private Task<IUIAutomationElement> GetElementAsync() => _applicationManager.RequestElementAsync(_by);
+    private async Task<T> WithElement<T>(Func<UiaElement, T> action) => action(await GetElementAsync());
+    private async Task WithElement(Action<UiaElement> action) => action(await GetElementAsync());
+    private Task<UiaElement> GetElementAsync() => _applicationManager.RequestElementAsync(_by);
 }

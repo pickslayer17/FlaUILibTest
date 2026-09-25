@@ -1,4 +1,6 @@
-namespace CacheManagement.Navigation;
+using UIDriver.Tree;
+
+namespace UIDriver.Search;
 class UiNodeWalker
 {
     public UiNode MoveParent(UiNode uiNode)

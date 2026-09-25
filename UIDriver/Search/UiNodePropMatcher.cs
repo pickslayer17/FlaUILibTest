@@ -1,6 +1,7 @@
+using UIDriver.Tree;
 using Interop.UIAutomationClient;
 
-namespace CacheManagement.Navigation;
+namespace UIDriver.Search;
 
 public sealed class UiNodePropMatcher
 {

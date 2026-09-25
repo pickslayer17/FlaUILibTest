@@ -1,19 +1,27 @@
 using System.Diagnostics;
-using Interop.UIAutomationClient;
-using UIDriver.Constants;
+using UIDriver.Diagnostics;
+using UIDriver.Exceptions;
+using UIDriver.Uia;
+using UIDriver.Uia.Constants;
+using UIDriver.Windows;
 
-namespace UIDriver;
+namespace UIDriver.Api;
 
-public sealed class UIDriver : IDisposable
+public sealed class Driver : IDisposable
 {
-    private readonly IUIAutomation _automation;
+    private readonly UiaAutomation _automation;
     private readonly UIApplicationManager _applicationManager;
     private Process? _process;
 
-    public UIDriver()
+    public Driver() : this(new DriverOptions())
     {
-        _automation = new CUIAutomation8();
-        _applicationManager = new UIApplicationManager(_automation);
+    }
+
+    public Driver(DriverOptions options)
+    {
+        _automation = new UiaAutomation();
+        var snapshotPublisher = new SnapshotPublisher(options.TreeObservers, options.BranchObservers);
+        _applicationManager = new UIApplicationManager(_automation, snapshotPublisher, options.LoggerFactory);
     }
 
     public void Launch(ProcessStartInfo processStartInfo)
@@ -21,9 +29,8 @@ public sealed class UIDriver : IDisposable
         _process = Process.Start(processStartInfo);
         _applicationManager.ProcessId = _process!.Id;
 
-        var desktop = _automation.GetRootElement();
-        var processIdCondition = _automation.CreatePropertyCondition((int)UiaProperty.ProcessId, _process.Id);
-        var mainWindow = desktop.FindFirst(TreeScope.TreeScope_Children, processIdCondition);
+        var mainWindow = _automation.Desktop.Live.FindFirstChild(UiaProperty.ProcessId, _process.Id)
+            ?? throw new WindowNotFoundException($"Main window of process {_process.Id} not found.");
 
         _applicationManager.RegisterDefault(mainWindow);
     }
@@ -35,7 +42,5 @@ public sealed class UIDriver : IDisposable
         return locator;
     }
 
-    public void Dispose()
-    {
-    }
+    public void Dispose() => _applicationManager.Dispose();
 }

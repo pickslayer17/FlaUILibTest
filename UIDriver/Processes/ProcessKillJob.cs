@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+namespace UIDriver.Processes;
+
 public static class ProcessKillJob
 {
     private static IntPtr _job;

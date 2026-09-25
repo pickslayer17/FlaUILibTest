@@ -1,5 +1,7 @@
 using Interop.UIAutomationClient;
 
+namespace UIDriver.Uia.Matchers;
+
 public sealed class CachedNativePropertyMatcher
 {
     private readonly IUIAutomationCondition _condition;

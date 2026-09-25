@@ -1,4 +1,4 @@
-namespace UIDriver.CustomModels;
+namespace UIDriver.Uia;
 
 public static class RunTimeIdExtensions
 {

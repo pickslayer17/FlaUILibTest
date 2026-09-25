@@ -1,28 +1,87 @@
-using Interop.UIAutomationClient;
-using UIDriver.NewCacheManagement;
-namespace CacheManagement;
+using UIDriver.Diagnostics;
+using UIDriver.Exceptions;
+using UIDriver.Tree.Snapshots;
+using UIDriver.Uia;
 
-public class UICachedTree
+namespace UIDriver.Tree;
+
+public sealed class UICachedTree
 {
-    public UiNode Tree { get; }
+    private readonly RunTimeId _windowRunTimeId;
+    private readonly string? _windowTitle;
+    private readonly SnapshotPublisher _snapshotPublisher;
+    private readonly NodeChangeHistory _changeHistory = new();
 
-    public UICachedTree(IUIAutomationElement cachedWindow)
+    public UiNode Tree { get; private set; }
+    public int Version { get; private set; }
+
+    public UICachedTree(UiaElement cachedWindow, RunTimeId windowRunTimeId, string? windowTitle, SnapshotPublisher snapshotPublisher)
     {
+        _windowRunTimeId = windowRunTimeId;
+        _windowTitle = windowTitle;
+        _snapshotPublisher = snapshotPublisher;
         Tree = BranchFactory.BuildUINodeTree(cachedWindow);
     }
 
-    public void Add(UiNode nodeToAdd)
+    public void Add(HeeledBranch branch)
     {
+        var parent = FindExistingNode(branch.Heel);
+        branch.Tree.Parent = parent;
+        LinkChildToParent(branch.Tree, parent);
 
+        PublishChange(NodeChangeState.Added, branch.Tree);
     }
 
-    public void Remove(UiNode nodeToRemove)
+    public void Replace(Branch branch)
     {
+        var target = FindExistingNode(branch.Tree);
+        ReplaceNode(target, branch.Tree);
 
+        PublishChange(NodeChangeState.Replaced, branch.Tree);
     }
 
-    public void Replace(UiNode target, UiNode branch)
+    public void MarkDirty(Branch branch)
     {
+        var target = FindExistingNode(branch.Tree);
+        target.IsDirty = true;
+
+        PublishChange(NodeChangeState.Dirty, target);
+    }
+
+    public void PublishSnapshot()
+    {
+        var root = NodeSnapshotFactory.Create(Tree, _changeHistory);
+        _snapshotPublisher.PublishTree(new TreeSnapshot(_windowRunTimeId, _windowTitle, Version, DateTime.Now, root));
+    }
+
+    private void PublishChange(NodeChangeState state, UiNode changedBranch)
+    {
+        Version++;
+        _changeHistory.Record(changedBranch, state, Version);
+        PublishSnapshot();
+    }
+
+    private UiNode FindExistingNode(UiNode node)
+    {
+        var runTimeId = node.RunTimeId
+            ?? throw new CachedTreeInconsistencyException("Node without RuntimeId cannot be located in the cached tree.");
+
+        return FindNode(Tree, candidate => runTimeId.Equals(candidate.RunTimeId))
+            ?? throw new CachedTreeInconsistencyException($"Node [{runTimeId}] not found in the cached tree.");
+    }
+
+    private void ReplaceNode(UiNode target, UiNode replacement)
+    {
+        var parent = target.Parent;
+        if (parent == null)
+        {
+            Tree = replacement;
+            return;
+        }
+
+        replacement.Parent = parent;
+        parent.Children = parent.Children.Select(child => child == target ? replacement : child).ToArray();
+        target.Parent = null;
     }
 
     private static UiNode? FindNode(UiNode node, Func<UiNode, bool> condition)

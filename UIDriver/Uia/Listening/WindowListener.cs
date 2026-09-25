@@ -1,24 +1,22 @@
 using Interop.UIAutomationClient;
-using UIDriver.CustomModels;
-using UIDriver.Interfaces;
-using UIDriver.NewCacheManagement;
+using UIDriver.Uia.Constants;
 
-namespace UIDriver;
+namespace UIDriver.Uia.Listening;
 
 public sealed class WindowListener : IDisposable
 {
-    private readonly IUIAutomation _automation;
-    private readonly IUIAutomationElement _window;
+    private readonly UiaAutomation _automation;
+    private readonly UiaElement _window;
     private readonly RunTimeId _windowRunTimeId;
-    private List<IStructureChangedListener> _structureChangedListeners = new();
-    private List<IPropertyChangedListener> _propertChangedListeners = new();
+    private readonly List<IStructureChangedListener> _structureChangedListeners = new();
+    private readonly List<IPropertyChangedListener> _propertyChangedListeners = new();
 
-    private ToggleWindowListener? _toggleWindowSubscriber;
-    private StructureChangeType[] _ignoredStructureChangeTypes =
+    private IToggleWindowListener? _toggleWindowListener;
+    private readonly StructureChangeType[] _ignoredStructureChangeTypes =
     [
         StructureChangeType.StructureChangeType_ChildRemoved,
     ];
-    private UiaProperty[] _ignoredProperties =
+    private readonly UiaProperty[] _ignoredProperties =
     [
        UiaProperty.BoundingRectangle,
     ];
@@ -28,36 +26,35 @@ public sealed class WindowListener : IDisposable
     private NativeAutomationEventHandler? _windowOpenedHandler;
     private NativeAutomationEventHandler? _windowClosedHandler;
 
-    public WindowListener(IUIAutomationElement window, IUIAutomation automation)
+    public WindowListener(UiaElement window, RunTimeId windowRunTimeId, UiaAutomation automation)
     {
         _window = window;
-        _windowRunTimeId = window.LiveRuntimeId();
+        _windowRunTimeId = windowRunTimeId;
         _automation = automation;
     }
 
     public void RegisterStructureChangedListener(IStructureChangedListener structureChangedListener) => _structureChangedListeners.Add(structureChangedListener);
 
-    public void RegisterPropertyChangedListener(IPropertyChangedListener propertyChangedListener) => _propertChangedListeners.Add(propertyChangedListener);
+    public void RegisterPropertyChangedListener(IPropertyChangedListener propertyChangedListener) => _propertyChangedListeners.Add(propertyChangedListener);
 
-    public void RegisterToggleWindowEvent(ToggleWindowListener subscriber) => _toggleWindowSubscriber = subscriber;
+    public void RegisterToggleWindowListener(IToggleWindowListener toggleWindowListener) => _toggleWindowListener = toggleWindowListener;
 
     public void StartListening()
     {
-        var structureCacheRequest = CacheRequestFactory.BuildCacheRequest(_automation);
-        _structureChangedHandler = new NativeStructureChangedHandler(OnStructureChanged);
-        _automation.AddStructureChangedEventHandler(_window, TreeScope.TreeScope_Subtree, structureCacheRequest, _structureChangedHandler);
+        var automation = _automation.Native;
+        var window = _window.Native;
 
-        var propertyCacheRequest = CacheRequestFactory.BuildCacheRequest(_automation);
-        propertyCacheRequest.TreeScope = TreeScope.TreeScope_Element;
+        _structureChangedHandler = new NativeStructureChangedHandler(OnStructureChanged);
+        automation.AddStructureChangedEventHandler(window, TreeScope.TreeScope_Subtree, CacheProfile.Subtree.CreateRequest(_automation), _structureChangedHandler);
 
         _propertyChangedHandler = new NativePropertyChangedHandler(OnPropertyChanged);
-        _automation.AddPropertyChangedEventHandler(_window, TreeScope.TreeScope_Subtree, propertyCacheRequest, _propertyChangedHandler, PropertiesToWatch());
+        automation.AddPropertyChangedEventHandler(window, TreeScope.TreeScope_Subtree, CacheProfile.SingleElement.CreateRequest(_automation), _propertyChangedHandler, PropertiesToWatch());
 
         _windowOpenedHandler = new NativeAutomationEventHandler(OnWindowOpened);
-        _automation.AddAutomationEventHandler((int)UiaEvent.WindowOpened, _window, TreeScope.TreeScope_Subtree, null, _windowOpenedHandler);
+        automation.AddAutomationEventHandler((int)UiaEvent.WindowOpened, window, TreeScope.TreeScope_Subtree, null, _windowOpenedHandler);
 
         _windowClosedHandler = new NativeAutomationEventHandler(OnWindowClosed);
-        _automation.AddAutomationEventHandler((int)UiaEvent.WindowClosed, _window, TreeScope.TreeScope_Element, null, _windowClosedHandler);
+        automation.AddAutomationEventHandler((int)UiaEvent.WindowClosed, window, TreeScope.TreeScope_Element, null, _windowClosedHandler);
     }
 
     private void OnStructureChanged(IUIAutomationElement element, StructureChangeType changeType, int[] runtimeId)
@@ -65,9 +62,11 @@ public sealed class WindowListener : IDisposable
         if (_ignoredStructureChangeTypes.Any(t => t == changeType))
             return;
 
+        var source = _automation.Wrap(element);
+        var targetRunTimeId = RunTimeId.FromArray(runtimeId);
         foreach (var structureChangedListener in _structureChangedListeners)
         {
-            structureChangedListener.NotifyOnStructureChanged(element, changeType, runtimeId);
+            structureChangedListener.NotifyOnStructureChanged(source, (UiaStructureChangeType)changeType, targetRunTimeId);
         }
     }
 
@@ -76,25 +75,27 @@ public sealed class WindowListener : IDisposable
         if (_ignoredProperties.Any(p => (int)p == propertyId))
             return;
 
-        foreach (var propertChangedListener in _propertChangedListeners)
+        var source = _automation.Wrap(element);
+        foreach (var propertyChangedListener in _propertyChangedListeners)
         {
-            propertChangedListener.NotifyOnPropertyChanged(element, propertyId, newValue);
+            propertyChangedListener.NotifyOnPropertyChanged(source, (UiaProperty)propertyId, newValue);
         }
     }
 
     private void OnWindowOpened(IUIAutomationElement element, int eventId)
     {
-        _toggleWindowSubscriber?.NotifyOnOpened(element);
+        _toggleWindowListener?.NotifyOnOpened(_automation.Wrap(element));
     }
 
     private void OnWindowClosed(IUIAutomationElement element, int eventId)
     {
-        _toggleWindowSubscriber?.NotifyOnClosed(element, _windowRunTimeId);
+        _toggleWindowListener?.NotifyOnClosed(_windowRunTimeId);
     }
 
     private static int[] PropertiesToWatch()
-        => UiaPropertyHelper.AllProperties
-            .Except([(int)UiaProperty.BoundingRectangle])
+        => CacheProfile.SingleElement.Properties
+            .Except([UiaProperty.RuntimeId])
+            .Select(property => (int)property)
             .ToArray();
 
     public void Dispose()

@@ -1,121 +1,49 @@
-using Interop.UIAutomationClient;
-using System.Collections.Concurrent;
-using UIDriver.Constants;
-using UIDriver.CustomModels;
+using Microsoft.Extensions.Logging;
+using UIDriver.Api;
+using UIDriver.Diagnostics;
+using UIDriver.Events;
+using UIDriver.Events.Handlers;
+using UIDriver.Uia;
 
-namespace UIDriver;
+namespace UIDriver.Windows;
 
-public sealed class UIApplicationManager
+public sealed class UIApplicationManager : IDisposable
 {
-    public int ProcessId { get; set; }
+    private readonly UiaAutomation _automation;
+    private readonly WindowRegistry _windowRegistry = new();
+    private readonly EventQueue _eventQueue = new();
+    private readonly WindowContainerFactory _windowContainerFactory;
 
-    private readonly IUIAutomation _automation;
-    private readonly ConcurrentDictionary<RunTimeId, WindowContainer> _containers = new();
-    private readonly ToggleWindowListener _toggleWindowListener;
-
-    private Lock _windowEventLock = new();
-
-    private WindowContainer? _defaultContainer;
-    private WindowContainer? _desktopContainer;
-
-    public UIApplicationManager(IUIAutomation automation)
+    public UIApplicationManager(UiaAutomation automation, SnapshotPublisher snapshotPublisher, ILoggerFactory loggerFactory)
     {
         _automation = automation;
-        _toggleWindowListener = new ToggleWindowListener(this);
+        _windowContainerFactory = new WindowContainerFactory(automation, _eventQueue, snapshotPublisher);
+        _eventQueue.Start(CreateEventDispatcher(snapshotPublisher, loggerFactory));
     }
 
-    public void RegisterDefault(IUIAutomationElement window) => _defaultContainer = CreateWindowContainer(window);
-
-    public void RegisterDesktop(IUIAutomationElement window) => _desktopContainer = CreateWindowContainer(window);
-
-    public Task<IUIAutomationElement> RequestElementAsync(UIBy by)
+    public int ProcessId
     {
-        lock (_windowEventLock)
-        {
-            return _defaultContainer!.SubmitOrderAsync(by);
-        }
+        get => _windowRegistry.ProcessId;
+        set => _windowRegistry.ProcessId = value;
     }
 
-    public void NotifyWindowOpened(IUIAutomationElement window)
+    public void RegisterDefault(UiaElement window) => _windowRegistry.RegisterDefault(_windowContainerFactory.Create(window));
+
+    public void RegisterDesktop(UiaElement window) => _windowRegistry.RegisterDesktop(_windowContainerFactory.Create(window));
+
+    public Task<UiaElement> RequestElementAsync(UIBy by) => _windowRegistry.DefaultContainer!.SubmitOrderAsync(by);
+
+    public void Dispose()
     {
-        lock (_windowEventLock)
-        {
-            var windowRunTimeId = window.LiveRuntimeId();
-
-            if (windowRunTimeId.State != RunTimeIdStates.Valid)
-                throw new InvalidOperationException($"Invalid window RuntimeId");
-
-            if(_containers.TryGetValue(windowRunTimeId, out _))
-            {
-                return;
-            }
-
-            CreateWindowContainer(window);
-        }
+        _automation.RemoveAllEventHandlers();
+        _eventQueue.Dispose();
+        _windowRegistry.Dispose();
     }
 
-    public void NotifyWindowClosed(RunTimeId id)
-    {
-        lock (_windowEventLock)
-        {
-            if (id.State != RunTimeIdStates.Valid)
-            {
-                throw new InvalidOperationException("should be always valid. smth went wrong");
-                return;
-            }
-
-            if (_containers.TryGetValue(id, out _))
-            {
-                RemoveWindowContainer(id);
-                
-                return;
-            }
-
-        }
-    }
-
-    private void ReassignDefaultContainer()
-    {
-        var allApplicationContainers = _containers.Where(kv => kv.Value != _desktopContainer).Where(kv => kv.Value.ProcessId == ProcessId);
-        if (!allApplicationContainers.Any())
-        {
-            throw new NotImplementedException();//should be some logic, dont know which
-        }
-
-        _defaultContainer = allApplicationContainers.First().Value;
-    }
-
-    private bool IsDefaultContainerExists() => _containers.Any(kvp => ReferenceEquals(kvp.Value, _defaultContainer));
-
-    private WindowContainer CreateWindowContainer(IUIAutomationElement window)
-    {
-        var windowRunTimeId = window.LiveRuntimeId();
-
-        if(windowRunTimeId.State != RunTimeIdStates.Valid)
-            throw new Exception($"Invalid window RuntimeId: {windowRunTimeId}");
-
-        var container = new WindowContainer(window, _automation);
-        container.RegisterToggleWindowEvent(_toggleWindowListener);
-        if(!_containers.TryAdd(windowRunTimeId, container))
-            throw new Exception($"Failed to add window container for window [{windowRunTimeId}].");
-
-        return container;
-    }
-
-    private void RemoveWindowContainer(RunTimeId id)
-    {
-        if (_containers.TryRemove(id, out var container))
-        {
-            container.Dispose();
-
-            if (!IsDefaultContainerExists())
-            {
-                ReassignDefaultContainer();
-            }
-        }
-        else
-        {
-            throw new InvalidProgramException("we have check on container exist, so its very strange that is wasnt removed");
-        }
-    }
+    private EventDispatcher CreateEventDispatcher(SnapshotPublisher snapshotPublisher, ILoggerFactory loggerFactory) => new(
+        new ChildAddedHandler(snapshotPublisher, loggerFactory.CreateLogger<ChildAddedHandler>()),
+        new ChildrenInvalidatedHandler(snapshotPublisher, loggerFactory.CreateLogger<ChildrenInvalidatedHandler>()),
+        new PropertyChangedHandler(),
+        new WindowOpenedHandler(_windowRegistry, _windowContainerFactory, loggerFactory.CreateLogger<WindowOpenedHandler>()),
+        new WindowClosedHandler(_windowRegistry, loggerFactory.CreateLogger<WindowClosedHandler>()));
 }

@@ -1,7 +1,8 @@
 using System.Xml;
 using System.Xml.XPath;
+using UIDriver.Tree;
 
-namespace CacheManagement.Navigation;
+namespace UIDriver.Search;
 class UiNodeNavigator : XPathNavigator
 {
     private const int NoAttributeValue = -1;

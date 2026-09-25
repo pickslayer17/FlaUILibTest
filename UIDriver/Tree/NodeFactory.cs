@@ -1,33 +1,12 @@
-﻿using CacheManagement;
-using Interop.UIAutomationClient;
-using UIDriver.CustomModels;
+using UIDriver.Uia;
 
-namespace UIDriver.NewCacheManagement;
+namespace UIDriver.Tree;
 
-public class NodeFactory
+public static class NodeFactory
 {
-    public static UiNode NewNode(IUIAutomationElement uiAutomationElement, bool liveRunTimeId = false)
-    {
-        var runTimeId = liveRunTimeId? 
-            uiAutomationElement.LiveRuntimeId().ToCacheRunTimeId() :
-            uiAutomationElement.CachedRuntimeId();
+    public static UiNode NewNodeFromCache(UiaElement element)
+        => new(element, element.Cached.RunTimeId, element.Cached.ControlType, element.Cached.Name);
 
-        var node = new UiNode(uiAutomationElement)
-        {
-            RunTimeId = runTimeId,
-        };
-
-        return node;
-    }
-
-    public static UiNode NewNodeWithParent(
-        IUIAutomationElement uiAutomationElement,
-        UiNode parentNode,
-        bool liveRunTimeId = false)
-    {
-        var node = new UiNode(uiAutomationElement);
-        node.Parent = parentNode;
-
-        return node;
-    }
+    public static UiNode NewHeelFromLive(UiaElement liveParent)
+        => new(liveParent, liveParent.Live.RunTimeId, liveParent.Live.ControlType, liveParent.Live.Name);
 }

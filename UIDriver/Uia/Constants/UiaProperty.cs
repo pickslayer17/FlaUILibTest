@@ -1,4 +1,4 @@
-namespace UIDriver;
+namespace UIDriver.Uia.Constants;
 
 // Values mirror UIAutomationClient.h from Windows SDK 10.0.26100.0.
 public enum UiaProperty
@@ -75,10 +75,4 @@ public enum UiaProperty
     IsSelectionPattern2Available = 30168, Selection2FirstSelectedItem = 30169,
     Selection2LastSelectedItem = 30170, Selection2CurrentSelectedItem = 30171,
     Selection2ItemCount = 30172, HeadingLevel = 30173, IsDialog = 30174
-}
-
-public static class UiaPropertyHelper
-{
-    public static readonly int[] AllProperties = Enum.GetValues<UiaProperty>().Select(property => (int)property).ToArray();
-    public static int GetPropertyId(UiaProperty property) => (int)property;
 }

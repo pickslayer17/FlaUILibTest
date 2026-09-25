@@ -1,39 +1,15 @@
-using System.Windows.Forms;
-using UIDriver.NewCacheManagement;
+using UIDriver.Diagnostics;
+using UIDriver.Tree.Snapshots;
+
 namespace UIDriver.Visualization;
 
-public sealed class TreeVisualizer 
+public sealed class TreeVisualizer : ITreeObserver
 {
     public static TreeVisualizer Instance { get; } = new();
 
-    private TreeVisualizerForm? _form;
-    private readonly object _lock = new();
+    private readonly StaFormHost<TreeVisualizerForm> _formHost = new();
 
     private TreeVisualizer() { }
 
-    public void OnSnapshot(object owner, string title, NodeSnapshot snapshot)
-    {
-        EnsureStarted();
-        //_form!.RenderSnapshot(owner, title, snapshot);
-    }
-
-    private void EnsureStarted()
-    {
-        lock (_lock)
-        {
-            if (_form != null) return;
-
-            var ready = new ManualResetEventSlim();
-            var thread = new Thread(() =>
-            {
-                _form = new TreeVisualizerForm();
-                _form.Load += (_, _) => ready.Set();
-                Application.Run(_form);
-            });
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.IsBackground = true;
-            thread.Start();
-            ready.Wait();
-        }
-    }
+    public void OnTreeSnapshot(TreeSnapshot snapshot) => _formHost.StartedForm.RenderSnapshot(snapshot);
 }

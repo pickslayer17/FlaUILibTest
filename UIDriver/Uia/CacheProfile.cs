@@ -1,26 +1,37 @@
-﻿using Interop.UIAutomationClient;
+using Interop.UIAutomationClient;
+using UIDriver.Uia.Constants;
 
-namespace UIDriver.NewCacheManagement;
+namespace UIDriver.Uia;
 
-public static class CacheRequestFactory
+public sealed class CacheProfile
 {
-    public static int[] CachedProperties =
+    private static readonly UiaProperty[] TreeProperties =
     [
-        (int)UiaProperty.RuntimeId,
-        (int)UiaProperty.ControlType,
-        (int)UiaProperty.Name
+        UiaProperty.RuntimeId,
+        UiaProperty.ControlType,
+        UiaProperty.Name
     ];
 
-    public static TreeScope TreeScope = TreeScope.TreeScope_Subtree;
-    public static AutomationElementMode AutomationElementMode = AutomationElementMode.AutomationElementMode_Full;
+    public static CacheProfile Subtree { get; } = new(TreeProperties, TreeScope.TreeScope_Subtree);
+    public static CacheProfile SingleElement { get; } = new(TreeProperties, TreeScope.TreeScope_Element);
 
-    public static IUIAutomationCacheRequest BuildCacheRequest(IUIAutomation automation)
+    private readonly TreeScope _treeScope;
+
+    public IReadOnlyList<UiaProperty> Properties { get; }
+
+    private CacheProfile(IReadOnlyList<UiaProperty> properties, TreeScope treeScope)
     {
-        var cacheRequest = automation.CreateCacheRequest();
-        cacheRequest.TreeScope = TreeScope;
-        cacheRequest.AutomationElementMode = AutomationElementMode;
-        foreach (var propertyId in CachedProperties)
-            cacheRequest.AddProperty(propertyId);
+        Properties = properties;
+        _treeScope = treeScope;
+    }
+
+    internal IUIAutomationCacheRequest CreateRequest(UiaAutomation automation)
+    {
+        var cacheRequest = automation.Native.CreateCacheRequest();
+        cacheRequest.TreeScope = _treeScope;
+        cacheRequest.AutomationElementMode = AutomationElementMode.AutomationElementMode_Full;
+        foreach (var property in Properties)
+            cacheRequest.AddProperty((int)property);
 
         return cacheRequest;
     }

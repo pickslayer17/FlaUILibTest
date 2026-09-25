@@ -1,8 +1,8 @@
-using Interop.UIAutomationClient;
+using UIDriver.Uia.Constants;
 
-namespace UIDriver.Interfaces;
+namespace UIDriver.Uia.Listening;
 
 public interface IPropertyChangedListener
 {
-    public void NotifyOnPropertyChanged(IUIAutomationElement source, int propertyId, object newValue);
+    public void NotifyOnPropertyChanged(UiaElement source, UiaProperty property, object newValue);
 }

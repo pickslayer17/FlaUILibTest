@@ -1,4 +1,4 @@
-namespace UIDriver;
+namespace UIDriver.Uia.Constants;
 
 // Values mirror UIAutomationClient.h from Windows SDK 10.0.26100.0.
 public enum UiaControlType

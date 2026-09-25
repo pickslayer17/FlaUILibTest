@@ -1,46 +1,39 @@
-﻿using CacheManagement;
-using Interop.UIAutomationClient;
+using UIDriver.Uia;
 
-namespace UIDriver.NewCacheManagement;
+namespace UIDriver.Tree;
 
-public class BranchFactory
+public static class BranchFactory
 {
-    public static Branch BuildBranch(IUIAutomationElement element)
+    public static Branch BuildBranch(UiaElement element)
     {
-        var nodeTree = BuildUINodeTreeCore(element, null);
+        var nodeTree = BuildUINodeTree(element);
         var branch = new Branch(nodeTree);
 
         return branch;
     }
 
-    public static HeeledBranch BuildHeeledBranch(IUIAutomationElement element, IUIAutomationElement liveParent)
+    public static HeeledBranch BuildHeeledBranch(UiaElement element, UiaElement liveParent)
     {
-        var parentNode = NodeFactory.NewNode(liveParent, liveRunTimeId: true);
-        var nodeTree = BuildUINodeTreeCore(element, null);
-        var heeledBranch = new HeeledBranch(nodeTree, parentNode);
+        var heel = NodeFactory.NewHeelFromLive(liveParent);
+        var nodeTree = BuildUINodeTree(element);
+        var heeledBranch = new HeeledBranch(nodeTree, heel);
 
         return heeledBranch;
     }
 
-    public static UiNode BuildUINodeTree(IUIAutomationElement element)
+    public static UiNode BuildUINodeTree(UiaElement element)
     {
         return BuildUINodeTreeCore(element, null);
     }
 
-    private static UiNode BuildUINodeTreeCore(IUIAutomationElement element, UiNode parent)
+    private static UiNode BuildUINodeTreeCore(UiaElement element, UiNode? parent)
     {
-        var node = NodeFactory.NewNodeWithParent(element, parent);
-        var children = new List<UiNode>();
-        var cachedChildren = element.GetCachedChildren();
-        var childCount = cachedChildren?.Length ?? 0;
+        var node = NodeFactory.NewNodeFromCache(element);
+        node.Parent = parent;
+        node.Children = element.Cached.Children
+            .Select(child => BuildUINodeTreeCore(child, node))
+            .ToArray();
 
-        for (var i = 0; i < childCount && cachedChildren != null; i++)
-        {
-            var childElement = cachedChildren.GetElement(i);
-            children.Add(BuildUINodeTreeCore(childElement, node));
-        }
-
-        node.Children = children.ToArray();
         return node;
     }
 }

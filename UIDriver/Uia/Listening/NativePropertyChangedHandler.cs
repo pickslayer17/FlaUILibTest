@@ -1,6 +1,6 @@
 using Interop.UIAutomationClient;
 
-namespace UIDriver;
+namespace UIDriver.Uia.Listening;
 
 public sealed class NativePropertyChangedHandler : IUIAutomationPropertyChangedEventHandler
 {

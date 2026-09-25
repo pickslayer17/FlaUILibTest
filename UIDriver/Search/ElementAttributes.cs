@@ -1,3 +1,5 @@
+namespace UIDriver.Search;
+
 public enum ElementAttributes
 {
     Name,

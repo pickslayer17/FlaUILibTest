@@ -1,5 +1,12 @@
-﻿namespace UIDriver.NewCacheManagement;
+using UIDriver.Uia;
+using UIDriver.Uia.Constants;
 
-public class NodeSnapshot
-{
-}
+namespace UIDriver.Tree.Snapshots;
+
+public sealed record NodeSnapshot(
+    RunTimeId? RunTimeId,
+    UiaControlType ControlType,
+    string? Name,
+    bool IsDirty,
+    NodeChange Change,
+    IReadOnlyList<NodeSnapshot> Children);
